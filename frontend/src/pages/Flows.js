@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import FlowList from '../components/flows/FlowList';
+import { API_BASE_URL, fetchWithRetry } from '../utils/api';
 
 function Flows() {
   const [flows, setFlows] = useState([]);
@@ -21,7 +22,7 @@ function Flows() {
 
   const fetchFlows = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/flows/');
+      const response = await fetchWithRetry(`${API_BASE_URL}/flows/`);
       setFlows(response.data);
     } catch (err) {
       console.error("Error fetching flows:", err);
@@ -45,9 +46,9 @@ function Flows() {
 
     try {
       if (editingId) {
-        await axios.put(`http://localhost:8000/flows/${editingId}`, flowToSubmit);
+        await axios.put(`${API_BASE_URL}/flows/${editingId}`, flowToSubmit); // Direct axios.put for state-changing operation
       } else {
-        await axios.post('http://localhost:8000/flows/', flowToSubmit);
+        await axios.post(`${API_BASE_URL}/flows/`, flowToSubmit); // Direct axios.post for state-changing operation
       }
       
       setEditingId(null);
@@ -89,7 +90,7 @@ function Flows() {
   const handleDeleteFlow = async (flowId) => {
     if (!window.confirm("Are you sure? This may fail if transactions are linked to this flow.")) return;
     try {
-      await axios.delete(`http://localhost:8000/flows/${flowId}`);
+      await axios.delete(`${API_BASE_URL}/flows/${flowId}`); // Direct axios.delete for state-changing operation
       fetchFlows();
     } catch (err) {
       console.error("Failed to delete flow:", err);

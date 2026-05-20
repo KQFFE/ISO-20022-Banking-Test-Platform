@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react'; // Import useRef
 import axios from 'axios';
+import { API_BASE_URL, fetchWithRetry } from '../utils/api'; // Import centralized API utilities
 
-const API_BASE_URL = 'http://localhost:8000'; // Your FastAPI backend URL
 
 function Transactions() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -11,10 +11,12 @@ function Transactions() {
   const [uploadMessage, setUploadMessage] = useState('');
   const [error, setError] = useState('');
   const [errorDetailTx, setErrorDetailTx] = useState(null);
+  const modalRef = useRef(null); // Ref for the modal container
+  const prevActiveElement = useRef(null); // To store the element that had focus before modal opened
 
   const fetchTransactions = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/transactions/`);
+      const response = await fetchWithRetry(`${API_BASE_URL}/transactions/`);
       setTransactions(response.data);
     } catch (err) {
       console.error("Error fetching transactions:", err);
@@ -24,7 +26,7 @@ function Transactions() {
 
   const fetchFlows = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/flows/`);
+      const response = await fetchWithRetry(`${API_BASE_URL}/flows/`);
       setFlows(response.data);
       if (response.data.length > 0 && !selectedFlowId) {
         setSelectedFlowId(response.data[0].id);
@@ -39,6 +41,52 @@ function Transactions() {
     fetchFlows();
     fetchTransactions();
   }, [fetchFlows, fetchTransactions]);
+
+  // Effect for modal accessibility (focus trapping and escape key)
+  useEffect(() => {
+    // Only run if the modal is open AND the ref has been attached to the DOM
+    if (errorDetailTx && modalRef.current) {
+      // Store the element that was focused before the modal opened
+      prevActiveElement.current = document.activeElement;
+
+      // Focus the first focusable element in the modal
+      const focusableElements = modalRef.current.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusableElements.length > 0) {
+        focusableElements[0].focus();
+      }
+
+      const handleKeyDown = (event) => {
+        if (event.key === 'Escape') {
+          setErrorDetailTx(null);
+        } else if (event.key === 'Tab') {
+          const firstElement = focusableElements[0];
+          const lastElement = focusableElements[focusableElements.length - 1];
+
+          if (event.shiftKey) { // Shift + Tab
+            if (document.activeElement === firstElement) {
+              lastElement.focus();
+              event.preventDefault();
+            }
+          } else { // Tab
+            if (document.activeElement === lastElement) {
+              firstElement.focus();
+              event.preventDefault();
+            }
+          }
+        }
+      };
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+        // Return focus to the previously active element when modal closes
+        if (prevActiveElement.current) {
+          prevActiveElement.current.focus();
+        }
+      };
+    }
+  }, [errorDetailTx]); // Re-run effect when errorDetailTx changes (modal opens/closes)
 
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
@@ -60,7 +108,7 @@ function Transactions() {
     try {
       setUploadMessage('Uploading...');
       setError('');
-      const response = await axios.post(`${API_BASE_URL}/transactions/upload/${selectedFlowId}`, formData, {
+      const response = await axios.post(`${API_BASE_URL}/transactions/upload/${selectedFlowId}`, formData, { // Direct axios.post for file upload (retries are complex)
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setUploadMessage(`Upload successful: ${response.data.transactions_imported} transactions imported.`);
@@ -77,7 +125,7 @@ function Transactions() {
     try {
       setUploadMessage(`Generating output for ID: ${transactionId}...`);
       // Placeholder for the execution endpoint
-      await axios.post(`${API_BASE_URL}/transactions/${transactionId}/execute`);
+      await axios.post(`${API_BASE_URL}/transactions/${transactionId}/execute`); // Direct axios.post for state-changing operation
       setUploadMessage(`Output file generated successfully for Transaction ${transactionId}`);
       fetchTransactions();
     } catch (err) {
@@ -94,7 +142,7 @@ function Transactions() {
   const handleDelete = async (transactionId) => {
     if (!window.confirm("Are you sure you want to delete this transaction?")) return;
     try {
-      await axios.delete(`${API_BASE_URL}/transactions/${transactionId}`);
+      await axios.delete(`${API_BASE_URL}/transactions/${transactionId}`); // Direct axios.delete for state-changing operation
       setUploadMessage(`Transaction ${transactionId} deleted.`);
       fetchTransactions(); // Refresh the list after deletion
     } catch (err) {
@@ -228,6 +276,7 @@ function Transactions() {
           aria-labelledby="modal-title"
         >
           <div 
+            ref={modalRef}
             className="bg-white rounded-lg max-w-lg w-full p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
@@ -248,9 +297,13 @@ function Transactions() {
             </p>
             <div className="bg-red-50 p-4 rounded-md max-h-60 overflow-y-auto border border-red-100">
               <ul className="list-disc list-inside space-y-2">
-                {errorDetailTx.raw_data?.validation_errors?.map((err, idx) => (
-                  <li key={idx} className="text-sm text-red-700">{err}</li>
-                ))}
+                {errorDetailTx.raw_data?.validation_errors?.length > 0 ? (
+                  errorDetailTx.raw_data.validation_errors.map((err, idx) => (
+                    <li key={idx} className="text-sm text-red-700">{err}</li>
+                  ))
+                ) : (
+                  <li className="text-sm text-red-700">No specific validation errors found. Check flow configuration or file content.</li>
+                )}
               </ul>
             </div>
             <div className="mt-6 flex justify-end">

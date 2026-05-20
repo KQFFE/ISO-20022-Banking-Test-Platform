@@ -30,10 +30,11 @@ app.add_middleware(
 # Global Exception Handler to maintain CORS on 500 errors
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    origin = request.headers.get("origin")
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal Server Error", "message": str(exc)},
-        headers={"Access-Control-Allow-Origin": "http://localhost:3000"}
+        headers={"Access-Control-Allow-Origin": origin} if origin else {}
     )
 
 # 3. Include Routers

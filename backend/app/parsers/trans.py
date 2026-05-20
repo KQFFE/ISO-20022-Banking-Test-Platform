@@ -7,7 +7,7 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, respons
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.db.models import Transaction, Flow
-from app.parsers.pain_001 import Pain001Parser
+from app.parsers.registry import parser_registry, generator_registry
 from app.parsers.validator import ISO20022Validator
 
 router = APIRouter()
@@ -44,7 +44,11 @@ async def upload_iso_file(flow_id: int, file: UploadFile = File(...), db: Sessio
         with open(file_path, "rb") as f:
             content = f.read()
         
-        parser = Pain001Parser(content)
+        # Dynamically select parser based on flow's message_format
+        ParserClass = parser_registry.get(flow.message_format)
+        if not ParserClass:
+            raise HTTPException(status_code=400, detail=f"No parser found for message format: {flow.message_format}")
+        parser = ParserClass(content)
         parsed_data = parser.get_transactions()
 
         # Extract summary data from XML tags (e.g., <Sum>, <CtrlSum>, <NbOfNtries>, <NbOfTxs>)

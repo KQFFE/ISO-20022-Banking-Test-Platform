@@ -8,7 +8,7 @@ A test application for viewing, handling, and executing financial flows (Payment
 - **ISO 20022 Parsing**: Support for `pain.001` (Customer Credit Transfer Initiation) and `camt.054` (Bank-to-Customer Debit/Credit Notification).
 - **Batch Processing**: Automatically groups multiple payment instructions within a single file under a unique Message ID (MsgId).
 - **Smart Summaries**: Calculates total batch amounts and transaction counts during upload for easy reconciliation.
-- **Validation**: Built-in BIC and IBAN validation based on flow-specific rules.
+- **Validation**: Built-in BIC, IBAN, and date window validation (30-day back/future checks).
 - **Output Generation**: Generates compliant multi-entry CAMT.054 XML files based on processed batch data.
 
 ## Accessibility Standards
@@ -61,15 +61,18 @@ This project uses `npm` scripts at the root to orchestrate both backend (Python)
     This command creates the Python virtual environment, installs all Python dependencies, installs Node.js dependencies for both the root and frontend, and sets up Alembic.
     ```bash
     # From the project root (d:\Dev\IKANO testapp\)
-    npm install # Installs root npm dependencies (like concurrently)
+    npm install # Installs root npm dependencies
     npm run install:backend # Installs Python dependencies
     npm run install:frontend # Installs frontend npm dependencies
     # Then, for database setup (if not already done):
     # cd backend && alembic upgrade head
-    ```
+    ``` 
 
 2.  **Start Development Servers**:
-    Use the universal `npm` commands from the project root to start both tiers. The scripts handle virtual environment paths automatically across Windows and Linux.
+    Use the universal `npm` commands from the project root to start both tiers. The scripts handle virtual environment paths automatically across Windows and Linux. **Run these in separate terminal windows.**
+
+2.  **Start Development Servers**:
+    Use the universal `npm` commands from the project root to start both tiers. The scripts handle virtual environment paths automatically across Windows and Linux. **Run these in separate terminal windows.**
 
     **Terminal 1 (Backend):**
     ```bash

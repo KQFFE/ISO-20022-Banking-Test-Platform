@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { API_BASE_URL, fetchWithRetry } from '../utils/api';
 
-const API_BASE_URL = 'http://localhost:8000'; // Your FastAPI backend URL
 
 function Dashboard() {
   const [stats, setStats] = useState({ total_transactions: 0, active_flows: 0, executed_transactions: 0 });
@@ -9,7 +8,7 @@ function Dashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/stats`);
+        const response = await fetchWithRetry(`${API_BASE_URL}/stats`);
         setStats(response.data);
       } catch (err) {
         console.error("Error fetching dashboard stats:", err);

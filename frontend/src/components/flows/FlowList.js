@@ -29,8 +29,8 @@ const FlowList = ({ flows, onEdit, onDelete }) => {
                             <td className="px-4 py-2 border text-sm">{flow.valid_ibans.join(', ')}</td>
                             <td className="px-4 py-2 border text-xs">
                                 {flow.special_character_support && <div>• Special Characters</div>}
-                                {flow.back_dated && <div>• Back Dated</div>}
-                                {flow.future_dated && <div>• Future Dated</div>}
+                                {flow.back_dated && <div>• Back Dated (30 Days)</div>}
+                                {flow.future_dated && <div>• Future Dated (30 Days)</div>}
                             </td>
                             <td className="px-4 py-2 border text-right space-x-2 whitespace-nowrap">
                                 <button 
