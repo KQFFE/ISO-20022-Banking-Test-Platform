@@ -10,6 +10,7 @@ function Transactions() {
   const [transactions, setTransactions] = useState([]);
   const [uploadMessage, setUploadMessage] = useState('');
   const [error, setError] = useState('');
+  const [errorDetailTx, setErrorDetailTx] = useState(null);
 
   const fetchTransactions = useCallback(async () => {
     try {
@@ -170,13 +171,21 @@ function Transactions() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{tx.currency}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    tx.status === 'Executed' ? 'bg-green-100 text-green-800' : 
-                    tx.status === 'Validation Failed' ? 'bg-red-100 text-red-800' : 
-                    'bg-yellow-100 text-yellow-900'
-                  }`}>
-                    {tx.status}
-                  </span>
+                  {tx.status === 'Validation Failed' ? (
+                    <button 
+                      onClick={() => setErrorDetailTx(tx)}
+                      className="px-2 py-1 rounded-full text-xs bg-red-100 text-red-800 hover:bg-red-200 transition-colors font-semibold underline decoration-dotted"
+                      aria-label={`View validation errors for ${tx.instruction_id}`}
+                    >
+                      {tx.status}
+                    </button>
+                  ) : (
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      tx.status === 'Executed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-900'
+                    }`}>
+                      {tx.status}
+                    </span>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                   {tx.status !== 'Executed' && (
@@ -208,6 +217,53 @@ function Transactions() {
           </tbody>
         </table>
       </div>
+
+      {/* Validation Error Modal */}
+      {errorDetailTx && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+          onClick={() => setErrorDetailTx(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+        >
+          <div 
+            className="bg-white rounded-lg max-w-lg w-full p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 id="modal-title" className="text-xl font-bold text-red-600">Validation Errors</h3>
+              <button 
+                onClick={() => setErrorDetailTx(null)}
+                className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                aria-label="Close modal"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Message ID: <span className="font-mono font-bold">{errorDetailTx.instruction_id}</span>
+            </p>
+            <div className="bg-red-50 p-4 rounded-md max-h-60 overflow-y-auto border border-red-100">
+              <ul className="list-disc list-inside space-y-2">
+                {errorDetailTx.raw_data?.validation_errors?.map((err, idx) => (
+                  <li key={idx} className="text-sm text-red-700">{err}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button 
+                onClick={() => setErrorDetailTx(null)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

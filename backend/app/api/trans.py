@@ -60,16 +60,19 @@ async def upload_iso_file(flow_id: int, file: UploadFile = File(...), db: Sessio
 
         # 4. Validate and Save as a single Batch record
         batch_status = "Pending"
-        for item in parsed_data:
+        validation_errors = []
+        for i, item in enumerate(parsed_data):
             bic = item.get('bic')
             iban = item.get('iban')
+            instr_id = item.get('instruction_id') or f"Tx {i+1}"
             
-            is_valid_bic = ISO20022Validator.validate_bic(bic, flow.bic_codes or [])
-            is_valid_iban = ISO20022Validator.validate_iban(iban, flow.valid_ibans or [])
-            
-            if not is_valid_bic or not is_valid_iban:
-                batch_status = "Validation Failed"
-                break
+            if not ISO20022Validator.validate_bic(bic, flow.bic_codes or []):
+                validation_errors.append(f"{instr_id}: Invalid BIC '{bic}'")
+            if not ISO20022Validator.validate_iban(iban, flow.valid_ibans or []):
+                validation_errors.append(f"{instr_id}: Invalid IBAN '{iban}'")
+
+        if validation_errors:
+            batch_status = "Validation Failed"
 
         # Create one summary record for the entire file
         first_tx = parsed_data[0] if parsed_data else {}
@@ -81,7 +84,8 @@ async def upload_iso_file(flow_id: int, file: UploadFile = File(...), db: Sessio
             "raw_data": {
                 "batch_total": batch_total,
                 "batch_count": batch_count,
-                "transactions": parsed_data
+                "transactions": parsed_data,
+                "validation_errors": validation_errors
             }
         }
 
