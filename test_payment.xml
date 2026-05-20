@@ -2,11 +2,19 @@
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03">
     <CstmrCdtTrfInitn>
         <GrpHdr>
-            <MsgId>ABC/123/XYZ</MsgId>
+            <MsgId>BATCH-2023-10-27-001</MsgId>
             <CreDtTm>2023-10-27T14:30:00Z</CreDtTm>
-            <NbOfTxs>1</NbOfTxs>
+            <NbOfTxs>3</NbOfTxs>
+            <CtrlSum>4500.75</CtrlSum>
             <InitgPty><Nm>Test Corp</Nm></InitgPty>
         </GrpHdr>
+        <TxsSummry>
+            <TtlNtries>
+                <NbOfNtries>3</NbOfNtries>
+                <Sum>4500.75</Sum>
+                <CdtDbtInd>CRDT</CdtDbtInd>
+            </TtlNtries>
+        </TxsSummry>
         <PmtInf>
             <PmtId>
                 <InstrId>INSTR-001</InstrId>
@@ -16,6 +24,26 @@
                 <InstdAmt Ccy="SEK">1250.50</InstdAmt>
             </Amt>
             <Cdtr><Nm>Vendor Alpha</Nm></Cdtr>
+        </PmtInf>
+        <PmtInf>
+            <PmtId>
+                <InstrId>INSTR-002</InstrId>
+                <EndToEndId>E2E-002</EndToEndId>
+            </PmtId>
+            <Amt>
+                <InstdAmt Ccy="SEK">2750.00</InstdAmt>
+            </Amt>
+            <Cdtr><Nm>Service Beta</Nm></Cdtr>
+        </PmtInf>
+        <PmtInf>
+            <PmtId>
+                <InstrId>INSTR-003</InstrId>
+                <EndToEndId>E2E-003</EndToEndId>
+            </PmtId>
+            <Amt>
+                <InstdAmt Ccy="SEK">500.25</InstdAmt>
+            </Amt>
+            <Cdtr><Nm>Utility Gamma</Nm></Cdtr>
         </PmtInf>
     </CstmrCdtTrfInitn>
 </Document>

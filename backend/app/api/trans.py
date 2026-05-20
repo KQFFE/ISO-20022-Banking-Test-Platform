@@ -1,5 +1,7 @@
 import os
 import shutil
+import re
+import xml.sax.saxutils as saxutils
 from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, responses
 from sqlalchemy.orm import Session
@@ -45,32 +47,46 @@ async def upload_iso_file(flow_id: int, file: UploadFile = File(...), db: Sessio
         parser = Pain001Parser(content)
         parsed_data = parser.get_transactions()
 
-        # 4. Validate and Save to DB
+        # Extract summary data from XML tags (e.g., <Sum>, <CtrlSum>, <NbOfNtries>, <NbOfTxs>)
+        # Using regex for flexible extraction across different ISO namespaces
+        xml_str = content.decode('utf-8', errors='ignore')
+        msg_match = re.search(r'<MsgId>([^<]+)</MsgId>', xml_str)
+        nb_match = re.search(r'<(?:NbOfTxs|NbOfNtries)>(\d+)</', xml_str)
+        sum_match = re.search(r'<(?:CtrlSum|Sum)>([\d.]+)</', xml_str)
+
+        msg_id = msg_match.group(1) if msg_match else file.filename
+        batch_count = int(nb_match.group(1)) if nb_match else len(parsed_data)
+        batch_total = float(sum_match.group(1)) if sum_match else sum(float(item.get('amount', 0)) for item in parsed_data)
+
+        # 4. Validate and Save as a single Batch record
+        batch_status = "Pending"
         for item in parsed_data:
-            # Extract BIC/IBAN for validation logic, but keep them in item for raw_data storage
             bic = item.get('bic')
             iban = item.get('iban')
             
-            # Perform validation against Flow rules
             is_valid_bic = ISO20022Validator.validate_bic(bic, flow.bic_codes or [])
             is_valid_iban = ISO20022Validator.validate_iban(iban, flow.valid_ibans or [])
             
-            # Basic date validation logic (Simplified for demo)
-            today = datetime.now().date()
-            tx_date = today # In a real scenario, extract this from the XML
-            
-            date_valid = True
-            if not flow.back_dated and tx_date < today:
-                date_valid = False
-            if not flow.future_dated and tx_date > today:
-                date_valid = False
+            if not is_valid_bic or not is_valid_iban:
+                batch_status = "Validation Failed"
+                break
 
-            if not is_valid_bic or not is_valid_iban or not date_valid:
-                item['status'] = "Validation Failed"
+        # Create one summary record for the entire file
+        first_tx = parsed_data[0] if parsed_data else {}
+        batch_data = {
+            "instruction_id": msg_id, # Mapping MsgId to instruction_id for display
+            "amount": batch_total,
+            "currency": first_tx.get('currency', 'SEK'),
+            "status": batch_status,
+            "raw_data": {
+                "batch_total": batch_total,
+                "batch_count": batch_count,
+                "transactions": parsed_data
+            }
+        }
 
-            # Store everything in raw_data to ensure we have access to fields not in the DB model
-            tx = Transaction(flow_id=flow.id, raw_data=item, **{k: v for k, v in item.items() if hasattr(Transaction, k)})
-            db.add(tx)
+        tx = Transaction(flow_id=flow.id, **{k: v for k, v in batch_data.items() if hasattr(Transaction, k)})
+        db.add(tx)
         
         db.commit()
     except Exception as e:
@@ -95,20 +111,13 @@ async def execute_transaction(transaction_id: int, db: Session = Depends(get_db)
     # 3. Construct the CAMT.054 XML content using DB records
     cre_dt_tm = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     
-    # Ensure amount is a float to avoid formatting errors if it's stored as a string or None
-    try:
-        amount_val = float(tx.amount) if tx.amount is not None else 0.0
-    except (TypeError, ValueError):
-        amount_val = 0.0
+    # Extract batch data from raw_data for comprehensive reporting
+    raw_data_content = dict(tx.raw_data or {})
+    transactions_list = raw_data_content.get("transactions", [])
+    batch_total = raw_data_content.get("batch_total", tx.amount or 0.0)
+    batch_count = raw_data_content.get("batch_count", 1)
 
-    # Safely get EndToEndId from model or raw_data, fallback to instruction_id
-    e2e_id = getattr(tx, "end_to_end_id", None)
-    if not e2e_id and tx.raw_data:
-        e2e_id = tx.raw_data.get("end_to_end_id")
-    if not e2e_id:
-        e2e_id = tx.instruction_id
-
-    xml_content = (
+    xml_header = (
         f'<?xml version="1.0" encoding="UTF-8"?>\n'
         f'<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.054.001.02">\n'
         f'    <BkToCstmrDbtCdtNtfctn>\n'
@@ -119,18 +128,59 @@ async def execute_transaction(transaction_id: int, db: Session = Depends(get_db)
         f'        <Ntfctn>\n'
         f'            <Id>NTF-{tx.id}</Id>\n'
         f'            <CreDtTm>{cre_dt_tm}</CreDtTm>\n'
-        f'            <Ntry>\n'
-        f'                <Amt Ccy="{tx.currency}">{amount_val:.2f}</Amt>\n'
-        f'                <CdtDbtInd>DBIT</CdtDbtInd>\n'
-        f'                <Sts>BOOK</Sts>\n'
-        f'                <NtryDtls>\n'
-        f'                    <TxDtls>\n'
-        f'                        <Refs>\n'
-        f'                            <EndToEndId>{e2e_id}</EndToEndId>\n'
-        f'                        </Refs>\n'
-        f'                    </TxDtls>\n'
-        f'                </NtryDtls>\n'
-        f'            </Ntry>\n'
+        f'            <TxsSummry>\n'
+        f'                <TtlNtries>\n'
+        f'                    <NbOfNtries>{batch_count}</NbOfNtries>\n'
+        f'                    <Sum>{float(batch_total):.2f}</Sum>\n'
+        f'                    <CdtDbtInd>DBIT</CdtDbtInd>\n'
+        f'                </TtlNtries>\n'
+        f'            </TxsSummry>\n'
+    )
+
+    xml_entries = ""
+    for item in transactions_list:
+        # Ensure all data is XML-safe (escaped) and values are handled correctly
+        amt = float(item.get("amount", 0))
+        ccy = saxutils.escape(str(item.get("currency", tx.currency)))
+        e2e = saxutils.escape(str(
+            item.get("end_to_end_id") or 
+            item.get("instruction_id") or 
+            tx.instruction_id
+        ))
+        
+        xml_entries += (
+            f'            <Ntry>\n'
+            f'                <Amt Ccy="{ccy}">{amt:.2f}</Amt>\n'
+            f'                <CdtDbtInd>DBIT</CdtDbtInd>\n'
+            f'                <Sts>BOOK</Sts>\n'
+            f'                <NtryDtls>\n'
+            f'                    <TxDtls>\n'
+            f'                        <Refs>\n'
+            f'                            <EndToEndId>{e2e}</EndToEndId>\n'
+            f'                        </Refs>\n'
+            f'                    </TxDtls>\n'
+            f'                </NtryDtls>\n'
+            f'            </Ntry>\n'
+        )
+
+    # Fallback for single transactions or legacy data structure
+    if not xml_entries:
+        xml_entries = (
+            f'            <Ntry>\n'
+            f'                <Amt Ccy="{tx.currency}">{float(tx.amount or 0):.2f}</Amt>\n'
+            f'                <CdtDbtInd>DBIT</CdtDbtInd>\n'
+            f'                <Sts>BOOK</Sts>\n'
+            f'                <NtryDtls>\n'
+            f'                    <TxDtls>\n'
+            f'                        <Refs>\n'
+            f'                            <EndToEndId>{tx.instruction_id}</EndToEndId>\n'
+            f'                        </Refs>\n'
+            f'                    </TxDtls>\n'
+            f'                </NtryDtls>\n'
+            f'            </Ntry>\n'
+        )
+
+    xml_content = xml_header + xml_entries + (
         f'        </Ntfctn>\n'
         f'    </BkToCstmrDbtCdtNtfctn>\n'
         f'</Document>'

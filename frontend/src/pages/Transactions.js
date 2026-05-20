@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:8000'; // Your FastAPI backend URL
+const API_BASE_URL = 'http://localhost:8000'; // Your FastAPI backend URL
 
 function Transactions() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -144,8 +144,9 @@ function Transactions() {
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flow</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Instruction ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message ID</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tx Count</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Currency</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -157,7 +158,12 @@ function Transactions() {
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{tx.id}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{flows.find(f => f.id === tx.flow_id)?.name || 'N/A'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{tx.instruction_id}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{tx.amount.toFixed(2)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {(tx.raw_data?.batch_total || tx.amount).toFixed(2)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {tx.raw_data?.batch_count || 1}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{tx.currency}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <span className={`px-2 py-1 rounded-full text-xs ${

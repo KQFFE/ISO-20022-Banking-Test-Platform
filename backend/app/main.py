@@ -57,7 +57,3 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
 @app.get("/")
 async def root():
     return {"message": "ISO 20022 Banking Test Platform API is running."}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)

@@ -14,6 +14,7 @@ class FlowCreate(BaseModel):
     file_format: Optional[str] = "XML"
     bic_codes: Optional[List[str]] = []
     valid_ibans: Optional[List[str]] = []
+    special_character_support: Optional[bool] = False
     back_dated: Optional[bool] = False
     future_dated: Optional[bool] = False
 

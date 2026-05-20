@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:8000'; // Your FastAPI backend URL
+const API_BASE_URL = 'http://localhost:8000'; // Your FastAPI backend URL
 
 function Dashboard() {
   const [stats, setStats] = useState({ total_transactions: 0, active_flows: 0, executed_transactions: 0 });

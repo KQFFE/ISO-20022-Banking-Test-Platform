@@ -18,7 +18,7 @@ function Flows() {
 
   const fetchFlows = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/flows/');
+      const response = await axios.get('http://localhost:8000/flows/');
       setFlows(response.data);
     } catch (err) {
       console.error("Error fetching flows:", err);
@@ -31,23 +31,44 @@ function Flows() {
 
   const handleCreateFlow = async (e) => {
     e.preventDefault();
+    // Extract arrays from form elements since they aren't bound to state
+    const bicArray = e.target.elements.bic_codes.value.split(',').map(s => s.trim()).filter(s => s);
+    const ibanArray = e.target.elements.valid_ibans.value.split(',').map(s => s.trim()).filter(s => s);
+
+    const flowToSubmit = {
+      ...newFlow,
+      bic_codes: bicArray,
+      valid_ibans: ibanArray
+    };
+
     try {
-      await axios.post('http://127.0.0.1:8000/flows/', newFlow);
+      await axios.post('http://localhost:8000/flows/', flowToSubmit);
       setNewFlow({
         name: '',
         direction: 'Outbound',
         message_format: 'Pain.001',
         file_format: 'XML',
-        bic_codes: e.target.elements.bic_codes.value.split(',').map(s => s.trim()).filter(s => s),
-        valid_ibans: e.target.elements.valid_ibans.value.split(',').map(s => s.trim()).filter(s => s),
-        special_character_support: newFlow.special_character_support,
-        back_dated: newFlow.back_dated,
-        future_dated: newFlow.future_dated
+        bic_codes: [],
+        valid_ibans: [],
+        special_character_support: false,
+        back_dated: false,
+        future_dated: false
       });
       fetchFlows();
       e.target.reset();
     } catch (err) {
       console.error("Error creating flow:", err);
+    }
+  };
+
+  const handleDeleteFlow = async (flowId) => {
+    if (!window.confirm("Are you sure? This may fail if transactions are linked to this flow.")) return;
+    try {
+      await axios.delete(`http://localhost:8000/flows/${flowId}`);
+      fetchFlows();
+    } catch (err) {
+      console.error("Failed to delete flow:", err);
+      alert("Could not delete flow. It might be in use by existing transactions.");
     }
   };
 
@@ -122,7 +143,7 @@ function Flows() {
       </div>
 
       <div className="bg-white shadow rounded-lg">
-        <FlowList flows={flows} />
+        <FlowList flows={flows} onDelete={handleDeleteFlow} />
       </div>
     </div>
   );

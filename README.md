@@ -4,6 +4,13 @@ A test application for viewing, handling, and executing financial flows (Payment
 
 ## Project Structure
 
+## Key Features
+- **ISO 20022 Parsing**: Support for `pain.001` (Customer Credit Transfer Initiation) and `camt.054` (Bank-to-Customer Debit/Credit Notification).
+- **Batch Processing**: Automatically groups multiple payment instructions within a single file under a unique Message ID (MsgId).
+- **Smart Summaries**: Calculates total batch amounts and transaction counts during upload for easy reconciliation.
+- **Validation**: Built-in BIC and IBAN validation based on flow-specific rules.
+- **Output Generation**: Generates compliant multi-entry CAMT.054 XML files based on processed batch data.
+
 ### Backend (Python / FastAPI)
 - `backend/app/api/`: REST API endpoints for authentication, flow management, and transaction handling (including file uploads and parsing).
 - `backend/app/core/`: Configuration (Environment variables) and Security (SSO/OAuth).
@@ -55,55 +62,17 @@ This project uses `npm` scripts at the root to orchestrate both backend (Python)
     ```
 
 2.  **Start Development Servers**:
-    This command will start both the FastAPI backend and the React frontend development servers concurrently in a single terminal.
+    Use the universal `npm` commands from the project root to start both tiers. The scripts handle virtual environment paths automatically across Windows and Linux.
+
+    **Terminal 1 (Backend):**
     ```bash
-    # From the project root (d:\Dev\IKANO testapp\)
-    # Ensure your Python venv is activated if you're running this from a new terminal
-    .\venv\Scripts\activate # (Windows)
-    # source venv/bin/activate # (macOS/Linux)
-    npm run dev:all
+    npm run backend
     ```
 
-    The backend will be available at `http://127.0.0.1:8000` and the frontend at `http://localhost:3000`.
-
-### Manual Installation (If preferred)
-1.  **Backend**:
+    **Terminal 2 (Frontend):**
     ```bash
-    cd backend
-    python -m venv venv
-    .\venv\Scripts\activate # or source venv/bin/activate
-    pip install -r requirements.txt
+    npm run frontend
     ```
-2.  **Frontend**:
-    ```bash
-    cd frontend
-    npm install
-    ```
-
-### Manual Server Start (If preferred)
-1.  **Backend**:
-    ```bash
-    cd backend
-    uvicorn app.main:app --reload
-    ```
-2.  **Frontend**:
-    ```bash
-    cd frontend
-    npm start
-    ```
-
-```bash
-npm run install:all
-```
-
-Alternatively, install them manually:
-1. **Backend**: `pip install -r backend/requirements.txt`
-2. **Frontend**: `cd frontend && npm install`
-
-4. Run the server:
-   ```bash
-   uvicorn app.main:app --reload
-   ```
 
 ### 3. Database Migrations (Alembic)
 To manage database schema changes without losing data:
