@@ -4,9 +4,15 @@ __pycache__/
 *$py.class
 venv/
 .env
+.venv
+env/
+ENV/
+build/
+dist/
 
 # Database
 *.db
+*.sqlite3
 
 # Local directories for file processing
 backend/uploads/*
@@ -20,6 +26,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 build/
+.next/
 .pnp
 .pnp.js
 
