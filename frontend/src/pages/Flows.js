@@ -15,6 +15,9 @@ function Flows() {
     back_dated: false,
     future_dated: false
   });
+  const [editingId, setEditingId] = useState(null);
+  const [bicString, setBicString] = useState('');
+  const [ibanString, setIbanString] = useState('');
 
   const fetchFlows = async () => {
     try {
@@ -31,9 +34,8 @@ function Flows() {
 
   const handleCreateFlow = async (e) => {
     e.preventDefault();
-    // Extract arrays from form elements since they aren't bound to state
-    const bicArray = e.target.elements.bic_codes.value.split(',').map(s => s.trim()).filter(s => s);
-    const ibanArray = e.target.elements.valid_ibans.value.split(',').map(s => s.trim()).filter(s => s);
+    const bicArray = bicString.split(',').map(s => s.trim()).filter(s => s);
+    const ibanArray = ibanString.split(',').map(s => s.trim()).filter(s => s);
 
     const flowToSubmit = {
       ...newFlow,
@@ -42,14 +44,20 @@ function Flows() {
     };
 
     try {
-      await axios.post('http://localhost:8000/flows/', flowToSubmit);
+      if (editingId) {
+        await axios.put(`http://localhost:8000/flows/${editingId}`, flowToSubmit);
+      } else {
+        await axios.post('http://localhost:8000/flows/', flowToSubmit);
+      }
+      
+      setEditingId(null);
+      setBicString('');
+      setIbanString('');
       setNewFlow({
         name: '',
         direction: 'Outbound',
         message_format: 'Pain.001',
         file_format: 'XML',
-        bic_codes: [],
-        valid_ibans: [],
         special_character_support: false,
         back_dated: false,
         future_dated: false
@@ -59,6 +67,23 @@ function Flows() {
     } catch (err) {
       console.error("Error creating flow:", err);
     }
+  };
+
+  const handleEditInitiate = (flow) => {
+    setEditingId(flow.id);
+    setBicString(flow.bic_codes.join(', '));
+    setIbanString(flow.valid_ibans.join(', '));
+    setNewFlow({
+      name: flow.name,
+      direction: flow.direction,
+      message_format: flow.message_format,
+      file_format: flow.file_format,
+      special_character_support: flow.special_character_support,
+      back_dated: flow.back_dated,
+      future_dated: flow.future_dated
+    });
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDeleteFlow = async (flowId) => {
@@ -77,7 +102,9 @@ function Flows() {
       <h1 className="text-2xl font-bold mb-4">Flow Definitions</h1>
 
       <div className="mb-8 p-4 bg-white shadow rounded-lg">
-        <h2 className="text-lg font-semibold mb-4">Create New Flow</h2>
+        <h2 className="text-lg font-semibold mb-4">
+          {editingId ? `Editing Flow: ${newFlow.name}` : 'Create New Flow'}
+        </h2>
         <form onSubmit={handleCreateFlow} className="grid grid-cols-2 gap-4">
           <input 
             className="border p-2 rounded" 
@@ -101,14 +128,16 @@ function Flows() {
             onChange={(e) => setNewFlow({...newFlow, message_format: e.target.value})}
           />
           <input 
-            name="bic_codes"
             className="border p-2 rounded" 
             placeholder="Allowed BICs (comma separated)" 
+            value={bicString}
+            onChange={(e) => setBicString(e.target.value)}
           />
           <input 
-            name="valid_ibans"
             className="border p-2 rounded" 
             placeholder="IBAN Patterns (e.g. DE%, FR123)" 
+            value={ibanString}
+            onChange={(e) => setIbanString(e.target.value)}
           />
           <div className="flex flex-col gap-2 p-2">
             <label className="flex items-center gap-2 text-sm">
@@ -136,14 +165,37 @@ function Flows() {
               Allow Future Dated
             </label>
           </div>
-          <button type="submit" className="bg-blue-600 text-white rounded p-2 hover:bg-blue-700">
-            Add Flow
-          </button>
+          <div className="flex gap-2">
+            <button type="submit" className="flex-1 bg-blue-600 text-white rounded p-2 hover:bg-blue-700">
+              {editingId ? 'Update Flow' : 'Add Flow'}
+            </button>
+            {editingId && (
+              <button 
+                type="button" 
+                onClick={() => {
+                  setEditingId(null);
+                  setBicString('');
+                  setIbanString('');
+                  setNewFlow({
+                    name: '',
+                    direction: 'Outbound',
+                    message_format: 'Pain.001',
+                    file_format: 'XML',
+                    special_character_support: false,
+                    back_dated: false,
+                    future_dated: false
+                  });
+                }}
+                className="px-4 bg-gray-500 text-white rounded hover:bg-gray-600">
+                Cancel
+              </button>
+            )}
+          </div>
         </form>
       </div>
 
       <div className="bg-white shadow rounded-lg">
-        <FlowList flows={flows} onDelete={handleDeleteFlow} />
+        <FlowList flows={flows} onDelete={handleDeleteFlow} onEdit={handleEditInitiate} />
       </div>
     </div>
   );

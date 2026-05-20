@@ -32,6 +32,21 @@ def create_flow(flow: FlowCreate, db: Session = Depends(get_db)):
     db.refresh(db_flow)
     return db_flow
 
+@router.put("/{flow_id}")
+def update_flow(flow_id: int, flow: FlowCreate, db: Session = Depends(get_db)):
+    """Updates an existing flow definition."""
+    db_flow = db.query(Flow).filter(Flow.id == flow_id).first()
+    if not db_flow:
+        raise HTTPException(status_code=404, detail="Flow definition not found")
+    
+    update_data = flow.dict()
+    for key, value in update_data.items():
+        setattr(db_flow, key, value)
+    
+    db.commit()
+    db.refresh(db_flow)
+    return db_flow
+
 @router.delete("/{flow_id}")
 def delete_flow(flow_id: int, db: Session = Depends(get_db)):
     """Deletes a flow definition from the database."""
