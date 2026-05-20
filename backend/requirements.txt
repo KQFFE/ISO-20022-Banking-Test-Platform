@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+python-multipart
+authlib
+httpx
+python-dotenv
+starlette
+itsdangerous
+uvicorn[standard]
+pytest
+pytest-asyncio
+httpx
+alembic

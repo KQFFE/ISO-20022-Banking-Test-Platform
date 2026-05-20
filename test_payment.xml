@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03">
+    <CstmrCdtTrfInitn>
+        <GrpHdr>
+            <MsgId>ABC/123/XYZ</MsgId>
+            <CreDtTm>2023-10-27T14:30:00Z</CreDtTm>
+            <NbOfTxs>1</NbOfTxs>
+            <InitgPty><Nm>Test Corp</Nm></InitgPty>
+        </GrpHdr>
+        <PmtInf>
+            <PmtId>
+                <InstrId>INSTR-001</InstrId>
+                <EndToEndId>E2E-001</EndToEndId>
+            </PmtId>
+            <Amt>
+                <InstdAmt Ccy="SEK">1250.50</InstdAmt>
+            </Amt>
+            <Cdtr><Nm>Vendor Alpha</Nm></Cdtr>
+        </PmtInf>
+    </CstmrCdtTrfInitn>
+</Document>
