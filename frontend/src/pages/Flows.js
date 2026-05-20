@@ -106,42 +106,63 @@ function Flows() {
           {editingId ? `Editing Flow: ${newFlow.name}` : 'Create New Flow'}
         </h2>
         <form onSubmit={handleCreateFlow} className="grid grid-cols-2 gap-4">
-          <input 
-            className="border p-2 rounded" 
-            placeholder="Flow Name (e.g. SEPA Outbound)" 
-            value={newFlow.name}
-            onChange={(e) => setNewFlow({...newFlow, name: e.target.value})}
-            required
-          />
-          <select 
-            className="border p-2 rounded"
-            value={newFlow.direction}
-            onChange={(e) => setNewFlow({...newFlow, direction: e.target.value})}
-          >
-            <option value="Inbound">Inbound</option>
-            <option value="Outbound">Outbound</option>
-          </select>
-          <input 
-            className="border p-2 rounded" 
-            placeholder="Message Format (e.g. Pain.001)" 
-            value={newFlow.message_format}
-            onChange={(e) => setNewFlow({...newFlow, message_format: e.target.value})}
-          />
-          <input 
-            className="border p-2 rounded" 
-            placeholder="Allowed BICs (comma separated)" 
-            value={bicString}
-            onChange={(e) => setBicString(e.target.value)}
-          />
-          <input 
-            className="border p-2 rounded" 
-            placeholder="IBAN Patterns (e.g. DE%, FR123)" 
-            value={ibanString}
-            onChange={(e) => setIbanString(e.target.value)}
-          />
+          <div className="flex flex-col">
+            <label htmlFor="flow-name" className="text-sm font-medium text-gray-700 mb-1">Flow Name</label>
+            <input 
+              id="flow-name"
+              className="border p-2 rounded" 
+              placeholder="e.g. SEPA Outbound" 
+              value={newFlow.name}
+              onChange={(e) => setNewFlow({...newFlow, name: e.target.value})}
+              required
+            />
+          </div>
+          <div className="flex flex-col">
+            <label htmlFor="flow-direction" className="text-sm font-medium text-gray-700 mb-1">Direction</label>
+            <select 
+              id="flow-direction"
+              className="border p-2 rounded"
+              value={newFlow.direction}
+              onChange={(e) => setNewFlow({...newFlow, direction: e.target.value})}
+            >
+              <option value="Inbound">Inbound</option>
+              <option value="Outbound">Outbound</option>
+            </select>
+          </div>
+          <div className="flex flex-col">
+            <label htmlFor="message-format" className="text-sm font-medium text-gray-700 mb-1">Message Format</label>
+            <input 
+              id="message-format"
+              className="border p-2 rounded" 
+              placeholder="e.g. Pain.001" 
+              value={newFlow.message_format}
+              onChange={(e) => setNewFlow({...newFlow, message_format: e.target.value})}
+            />
+          </div>
+          <div className="flex flex-col">
+            <label htmlFor="allowed-bics" className="text-sm font-medium text-gray-700 mb-1">Allowed BICs</label>
+            <input 
+              id="allowed-bics"
+              className="border p-2 rounded" 
+              placeholder="Comma separated list" 
+              value={bicString}
+              onChange={(e) => setBicString(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col">
+            <label htmlFor="iban-patterns" className="text-sm font-medium text-gray-700 mb-1">IBAN Patterns</label>
+            <input 
+              id="iban-patterns"
+              className="border p-2 rounded" 
+              placeholder="e.g. DE%, FR123" 
+              value={ibanString}
+              onChange={(e) => setIbanString(e.target.value)}
+            />
+          </div>
           <div className="flex flex-col gap-2 p-2">
             <label className="flex items-center gap-2 text-sm">
               <input 
+                id="special-char-support"
                 type="checkbox" 
                 checked={newFlow.special_character_support}
                 onChange={(e) => setNewFlow({...newFlow, special_character_support: e.target.checked})}

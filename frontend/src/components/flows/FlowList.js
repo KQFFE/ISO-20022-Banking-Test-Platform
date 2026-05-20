@@ -6,13 +6,13 @@ const FlowList = ({ flows, onEdit, onDelete }) => {
             <table className="min-w-full bg-white border border-gray-200">
                 <thead className="bg-gray-50">
                     <tr>
-                        <th className="px-4 py-2 border">Flow Name</th>
-                        <th className="px-4 py-2 border">Direction</th>
-                        <th className="px-4 py-2 border">Message Format</th>
-                        <th className="px-4 py-2 border">BIC Codes</th>
-                        <th className="px-4 py-2 border">IBANs</th>
-                        <th className="px-4 py-2 border">Support</th>
-                        <th className="px-4 py-2 border text-right">Actions</th>
+                        <th scope="col" className="px-4 py-2 border">Flow Name</th>
+                        <th scope="col" className="px-4 py-2 border">Direction</th>
+                        <th scope="col" className="px-4 py-2 border">Message Format</th>
+                        <th scope="col" className="px-4 py-2 border">BIC Codes</th>
+                        <th scope="col" className="px-4 py-2 border">IBANs</th>
+                        <th scope="col" className="px-4 py-2 border">Support</th>
+                        <th scope="col" className="px-4 py-2 border text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -36,12 +36,14 @@ const FlowList = ({ flows, onEdit, onDelete }) => {
                                 <button 
                                     onClick={() => onEdit(flow)}
                                     className="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-1 rounded-md text-sm font-medium"
+                                    aria-label={`Edit flow ${flow.name}`}
                                 >
                                     Edit
                                 </button>
                                 <button 
                                     onClick={() => onDelete(flow.id)}
                                     className="text-red-600 hover:text-red-900 bg-red-50 px-3 py-1 rounded-md text-sm font-medium"
+                                    aria-label={`Delete flow ${flow.name}`}
                                 >
                                     Delete
                                 </button>

@@ -11,6 +11,13 @@ A test application for viewing, handling, and executing financial flows (Payment
 - **Validation**: Built-in BIC and IBAN validation based on flow-specific rules.
 - **Output Generation**: Generates compliant multi-entry CAMT.054 XML files based on processed batch data.
 
+## Accessibility Standards
+This project aims to comply with **WCAG 2.1 AA** standards:
+- **Perceivable**: Text alternatives for non-text content and high color contrast (min 4.5:1).
+- **Operable**: Full keyboard navigability and clear focus indicators.
+- **Understandable**: Consistent navigation and input assistance (labels/error messages).
+- **Robust**: Use of semantic HTML and ARIA landmarks where necessary.
+
 ### Backend (Python / FastAPI)
 - `backend/app/api/`: REST API endpoints for authentication, flow management, and transaction handling (including file uploads and parsing).
 - `backend/app/core/`: Configuration (Environment variables) and Security (SSO/OAuth).
