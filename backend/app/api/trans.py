@@ -1,13 +1,13 @@
 import os
 import shutil
 import re
-import xml.sax.saxutils as saxutils
 from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, responses
 from sqlalchemy.orm import Session
 from app.db.session import get_db
+from app.api.flows import FlowRead # Import FlowRead Pydantic model
 from app.db.models import Transaction, Flow
-from app.parsers.pain_001 import Pain001Parser
+from app.parsers.registry import parser_registry, generator_registry
 from app.parsers.validator import ISO20022Validator
 
 router = APIRouter()
@@ -44,7 +44,11 @@ async def upload_iso_file(flow_id: int, file: UploadFile = File(...), db: Sessio
         with open(file_path, "rb") as f:
             content = f.read()
         
-        parser = Pain001Parser(content)
+        # Dynamically select parser based on flow's message_format
+        ParserClass = parser_registry.get(flow.message_format.upper())
+        if not ParserClass:
+            raise HTTPException(status_code=400, detail=f"No parser found for message format: {flow.message_format}. Available: {', '.join(parser_registry.keys())}")
+        parser = ParserClass(content)
         parsed_data = parser.get_transactions()
 
         # Extract summary data from XML tags (e.g., <Sum>, <CtrlSum>, <NbOfNtries>, <NbOfTxs>)
@@ -118,97 +122,38 @@ async def execute_transaction(transaction_id: int, db: Session = Depends(get_db)
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
 
-    # 1. Fetch Flow to determine output format
+    # 1. Fetch Flow to determine output format and select generator, convert to Pydantic dict
     flow = db.query(Flow).filter(Flow.id == tx.flow_id).first()
-    msg_format = (flow.message_format if flow else "CAMT.054").lower()
-    is_pain = "pain.001" in msg_format
+    output_format = (flow.message_format if flow else "CAMT.054").upper() # Default to CAMT.054 if flow is missing, and convert to uppercase
+    flow_data_dict = FlowRead.from_orm(flow).dict() if flow else {}
+    GeneratorClass = generator_registry.get(output_format)
+    if not GeneratorClass:
+        raise HTTPException(status_code=400, detail=f"No generator found for output format: {output_format}. Available: {', '.join(generator_registry.keys())}")
+    
+    generator = GeneratorClass()
 
-    prefix = "Pain001" if is_pain else "CAMT054"
-    ns = "urn:iso:std:iso:20022:tech:xsd:pain.001.001.03" if is_pain else "urn:iso:std:iso:20022:tech:xsd:camt.054.001.02"
-    root_tag = "CstmrCdtTrfInitn" if is_pain else "BkToCstmrDbtCdtNtfctn"
-
-    # 2. Determine output filename
+    # 2. Prepare data for generator
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    output_filename = f"{prefix}_{tx.instruction_id}_{timestamp}.xml"
+    output_filename_prefix = output_format.replace('.', '').upper() # e.g., PAIN001, CAMT054
+    output_filename = f"{output_filename_prefix}_{tx.instruction_id}_{timestamp}.xml"
     output_path = os.path.join(OUTPUT_DIR, output_filename)
 
-    # 3. Construct the XML content
-    cre_dt_tm = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    # Extract batch data from raw_data for comprehensive reporting
     raw_data_content = dict(tx.raw_data or {})
     transactions_list = raw_data_content.get("transactions", [])
     batch_total = raw_data_content.get("batch_total", tx.amount or 0.0)
     batch_count = raw_data_content.get("batch_count", 1)
 
-    xml_content = f'<?xml version="1.0" encoding="UTF-8"?>\n<Document xmlns="{ns}">\n    <{root_tag}>\n'
+    tx_data_for_generator = {
+        "transaction": tx,
+        "raw_data_content": raw_data_content,
+        "transactions_list": transactions_list,
+        "batch_total": batch_total,
+        "batch_count": batch_count,
+        "flow_data": flow_data_dict # Pass flow data for more complex generation logic
+    }
 
-    if is_pain:
-        xml_content += (
-            f'        <GrpHdr>\n'
-            f'            <MsgId>EXEC-{tx.instruction_id}</MsgId>\n'
-            f'            <CreDtTm>{cre_dt_tm}</CreDtTm>\n'
-            f'            <NbOfTxs>{batch_count}</NbOfTxs>\n'
-            f'            <CtrlSum>{float(batch_total):.2f}</CtrlSum>\n'
-            f'        </GrpHdr>\n'
-        )
-        items = transactions_list if transactions_list else [{"amount": tx.amount, "currency": tx.currency, "instruction_id": tx.instruction_id, "date": raw_data_content.get("date")}]
-        for item in items:
-            amt = float(item.get("amount", 0))
-            ccy = saxutils.escape(str(item.get("currency", tx.currency)))
-            e2e = saxutils.escape(str(item.get("end_to_end_id") or item.get("instruction_id") or tx.instruction_id))
-            tx_date = item.get("date") or datetime.now().strftime("%Y-%m-%d")
-            iban = saxutils.escape(str(raw_data_content.get("iban", "N/A")))
-            xml_content += (
-                f'        <PmtInf>\n'
-                f'            <PmtInfId>PMT-{e2e}</PmtInfId>\n'
-                f'            <PmtMtd>TRF</PmtMtd>\n'
-                f'            <ReqdExctnDt>{tx_date}</ReqdExctnDt>\n'
-                f'            <DbtrAcct><Id><IBAN>{iban}</IBAN></Id></DbtrAcct>\n'
-                f'            <CdtTrfTxInf>\n'
-                f'                <PmtId><EndToEndId>{e2e}</EndToEndId></PmtId>\n'
-                f'                <Amt><InstdAmt Ccy="{ccy}">{amt:.2f}</InstdAmt></Amt>\n'
-                f'            </CdtTrfTxInf>\n'
-                f'        </PmtInf>\n'
-            )
-    else:
-        xml_content += (
-            f'        <GrpHdr>\n'
-            f'            <MsgId>NOTIF-{tx.instruction_id}</MsgId>\n'
-            f'            <CreDtTm>{cre_dt_tm}</CreDtTm>\n'
-            f'        </GrpHdr>\n'
-            f'        <Ntfctn>\n'
-            f'            <Id>NTF-{tx.id}</Id>\n'
-            f'            <CreDtTm>{cre_dt_tm}</CreDtTm>\n'
-            f'            <TxsSummry>\n'
-            f'                <TtlNtries>\n'
-            f'                    <NbOfNtries>{batch_count}</NbOfNtries>\n'
-            f'                    <Sum>{float(batch_total):.2f}</Sum>\n'
-            f'                    <CdtDbtInd>DBIT</CdtDbtInd>\n'
-            f'                </TtlNtries>\n'
-            f'            </TxsSummry>\n'
-        )
-        items = transactions_list if transactions_list else [{"amount": tx.amount, "currency": tx.currency, "instruction_id": tx.instruction_id}]
-        for item in items:
-            amt = float(item.get("amount", 0))
-            ccy = saxutils.escape(str(item.get("currency", tx.currency)))
-            e2e = saxutils.escape(str(item.get("end_to_end_id") or item.get("instruction_id") or tx.instruction_id))
-            xml_content += (
-                f'            <Ntry>\n'
-                f'                <Amt Ccy="{ccy}">{amt:.2f}</Amt>\n'
-                f'                <CdtDbtInd>DBIT</CdtDbtInd>\n'
-                f'                <Sts>BOOK</Sts>\n'
-                f'                <NtryDtls>\n'
-                f'                    <TxDtls>\n'
-                f'                        <Refs>\n'
-                f'                            <EndToEndId>{e2e}</EndToEndId>\n'
-                f'                        </Refs>\n'
-                f'                    </TxDtls>\n'
-                f'                </NtryDtls>\n'
-                f'            </Ntry>\n'
-            )
-        xml_content += '        </Ntfctn>\n'
-
-    xml_content += f'    </{root_tag}>\n</Document>'
+    # 3. Generate XML content using the selected generator
+    xml_content = generator.generate_xml(tx_data_for_generator, flow_data_dict)
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(xml_content)

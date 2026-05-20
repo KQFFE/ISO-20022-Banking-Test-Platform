@@ -45,7 +45,7 @@ async def upload_iso_file(flow_id: int, file: UploadFile = File(...), db: Sessio
             content = f.read()
         
         # Dynamically select parser based on flow's message_format
-        ParserClass = parser_registry.get(flow.message_format)
+        ParserClass = parser_registry.get(flow.message_format.upper())
         if not ParserClass:
             raise HTTPException(status_code=400, detail=f"No parser found for message format: {flow.message_format}")
         parser = ParserClass(content)

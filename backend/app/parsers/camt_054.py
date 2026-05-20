@@ -29,7 +29,31 @@ class Camt054Parser(BaseParser):
             amt_node = ntry.find('ns:Amt', self.ns)
             e2e_node = ntry.find('.//ns:EndToEndId', self.ns)
             date_node = ntry.find('.//ns:BookgDt/ns:Dt', self.ns)
-            cdtr_nm_node = ntry.find('.//ns:Dbtr/ns:Nm', self.ns) # In CRDT, Dbtr is the "payer"
+            val_date_node = ntry.find('.//ns:ValDt/ns:Dt', self.ns)
+            cdt_dbt_ind_node = ntry.find('ns:CdtDbtInd', self.ns)
+            
+            # Additional fields for richer output
+            acct_svcr_ref_node = ntry.find('ns:AcctSvcrRef', self.ns)
+            accptnc_dt_tm_node = ntry.find('.//ns:RltdDts/ns:AccptncDtTm', self.ns)
+
+            # Bank Transaction Code details
+            bk_tx_domn_cd_node = ntry.find('.//ns:BkTxCd/ns:Domn/ns:Cd', self.ns)
+            bk_tx_fmly_cd_node = ntry.find('.//ns:BkTxCd/ns:Domn/ns:Fmly/ns:Cd', self.ns)
+            bk_tx_subfmly_cd_node = ntry.find('.//ns:BkTxCd/ns:Domn/ns:Fmly/ns:SubFmlyCd', self.ns)
+
+            # Debtor Information
+            dbtr_nm_node = ntry.find('.//ns:Dbtr/ns:Nm', self.ns)
+            dbtr_addr_ctry_node = ntry.find('.//ns:Dbtr/ns:PstlAdr/ns:Ctry', self.ns)
+            dbtr_addr_lines = [line.text for line in ntry.findall('.//ns:Dbtr/ns:PstlAdr/ns:AdrLine', self.ns) if line.text]
+
+            # Remittance Information (handle multiple unstructured and structured)
+            remittance_info = {}
+            ustrd_rmts = [ustrd.text for ustrd in ntry.findall('.//ns:RmtInf/ns:Ustrd', self.ns) if ustrd.text]
+            if ustrd_rmts:
+                remittance_info['unstructured'] = ustrd_rmts
+            strd_cdtr_ref_node = ntry.find('.//ns:RmtInf/ns:Strd/ns:CdtrRefInf/ns:Ref', self.ns)
+            if strd_cdtr_ref_node is not None:
+                remittance_info['structured'] = {'CdtrRefInf': strd_cdtr_ref_node.text}
             
             if amt_node is not None:
                 transactions.append({
@@ -40,7 +64,17 @@ class Camt054Parser(BaseParser):
                     "status": "Pending",
                     "bic": bic,
                     "iban": iban,
-                    "date": date_node.text if date_node is not None else None,
-                    "creditor_name": cdtr_nm_node.text if cdtr_nm_node is not None else "Unknown",
+                    "date": date_node.text if date_node is not None else None, # Booking Date
+                    "value_date": val_date_node.text if val_date_node is not None else None,
+                    "credit_debit_indicator": cdt_dbt_ind_node.text if cdt_dbt_ind_node is not None else "CRDT", # Default to CRDT for CAMT.054
+                    "debtor_name": dbtr_nm_node.text if dbtr_nm_node is not None else "Unknown",
+                    "debtor_address_country": dbtr_addr_ctry_node.text if dbtr_addr_ctry_node is not None else None,
+                    "debtor_address_lines": dbtr_addr_lines,
+                    "remittance_info": remittance_info if remittance_info else None, # Store as dict
+                    "acct_svcr_ref": acct_svcr_ref_node.text if acct_svcr_ref_node is not None else None,
+                    "bank_transaction_code_domain": bk_tx_domn_cd_node.text if bk_tx_domn_cd_node is not None else None,
+                    "bank_transaction_code_family": bk_tx_fmly_cd_node.text if bk_tx_fmly_cd_node is not None else None,
+                    "bank_transaction_code_subfamily": bk_tx_subfmly_cd_node.text if bk_tx_subfmly_cd_node is not None else None,
+                    "acceptance_date_time": accptnc_dt_tm_node.text if accptnc_dt_tm_node is not None else None,
                 })
         return transactions

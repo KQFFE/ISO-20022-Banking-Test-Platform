@@ -36,7 +36,7 @@ class Pain001Generator(BaseGenerator):
             ccy = saxutils.escape(str(item.get("currency", tx.currency)))
             e2e = saxutils.escape(str(item.get("end_to_end_id") or item.get("instruction_id") or tx.instruction_id))
             tx_date = item.get("date") or datetime.now().strftime("%Y-%m-%d")
-            iban = saxutils.escape(str(raw_data_content.get("iban", "N/A"))) # Assuming debtor IBAN is stored in raw_data
+            iban = saxutils.escape(str(item.get("iban", "N/A"))) # Get debtor IBAN from the individual transaction item
             
             xml_content += (
                 f'        <PmtInf>\n'

@@ -18,12 +18,18 @@ class FlowCreate(BaseModel):
     back_dated: Optional[bool] = False
     future_dated: Optional[bool] = False
 
-@router.get("/")
+class FlowRead(FlowCreate):
+    id: int
+
+    class Config:
+        from_attributes = True # For Pydantic v2, use from_attributes = True. For Pydantic v1, use orm_mode = True
+
+@router.get("/", response_model=List[FlowRead])
 def list_flows(db: Session = Depends(get_db)):
     """Returns all available flow definitions."""
     return db.query(Flow).all()
 
-@router.post("/")
+@router.post("/", response_model=FlowRead)
 def create_flow(flow: FlowCreate, db: Session = Depends(get_db)):
     """Creates a new flow definition."""
     db_flow = Flow(**flow.dict())
@@ -32,7 +38,7 @@ def create_flow(flow: FlowCreate, db: Session = Depends(get_db)):
     db.refresh(db_flow)
     return db_flow
 
-@router.put("/{flow_id}")
+@router.put("/{flow_id}", response_model=FlowRead)
 def update_flow(flow_id: int, flow: FlowCreate, db: Session = Depends(get_db)):
     """Updates an existing flow definition."""
     db_flow = db.query(Flow).filter(Flow.id == flow_id).first()

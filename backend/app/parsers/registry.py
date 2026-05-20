@@ -7,12 +7,12 @@ from .base_interfaces import BaseParser, BaseGenerator # Import from new file
 
 # Registry for input parsers
 parser_registry: Dict[str, Type[BaseParser]] = {
-    "Pain.001": Pain001Parser,
+    "PAIN.001": Pain001Parser,
     "CAMT.054": Camt054Parser,
 }
 
 # Registry for output generators
 generator_registry: Dict[str, Type[BaseGenerator]] = {
-    "Pain.001": Pain001Generator, # For when Pain.001 is the desired output format
+    "PAIN.001": Pain001Generator, # For when PAIN.001 is the desired output format
     "CAMT.054": Camt054Generator, # For when CAMT.054 is the desired output format
 }
