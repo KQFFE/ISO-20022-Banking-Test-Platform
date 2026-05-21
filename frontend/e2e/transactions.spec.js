@@ -77,5 +77,13 @@ test.describe('Transaction Lifecycle', () => {
     await expect(modal).toContainText('Duplicate Error');
     await page.getByLabel('Close modal').click();
     await expect(modal).not.toBeVisible();
+
+    // 8. Cleanup: Delete the flow created for this test
+    // This will cascade and delete all transactions associated with it.
+    await page.goto('/flows');
+    const flowRow = page.locator('tr', { hasText: testFlowName });
+    await page.on('dialog', dialog => dialog.accept()); // Automatically accept the confirmation window
+    await flowRow.getByLabel(`Delete flow ${testFlowName}`).click();
+    await expect(page.locator('table')).not.toContainText(testFlowName);
   });
 });
