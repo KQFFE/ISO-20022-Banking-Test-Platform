@@ -6,11 +6,14 @@ def test_pain_001_parser_extraction():
     xml_content = b"""<?xml version="1.0" encoding="UTF-8"?>
     <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03">
         <CstmrCdtTrfInitn>
+            <GrpHdr><MsgId>TEST-MSG</MsgId></GrpHdr>
             <PmtInf>
-                <PmtId><InstrId>TX-123</InstrId></PmtId>
-                <Amt><InstdAmt Ccy="EUR">500.00</InstdAmt></Amt>
                 <DbtrAgt><FinInstnId><BIC>TESTBICC</BIC></FinInstnId></DbtrAgt>
                 <DbtrAcct><Id><IBAN>DE12345</IBAN></Id></DbtrAcct>
+                <CdtTrfTxInf>
+                    <PmtId><InstrId>TX-123</InstrId></PmtId>
+                    <Amt><InstdAmt Ccy="EUR">500.00</InstdAmt></Amt>
+                </CdtTrfTxInf>
             </PmtInf>
         </CstmrCdtTrfInitn>
     </Document>"""
@@ -28,13 +31,16 @@ def test_pain_001_multiple_transactions():
     xml_content = b"""<?xml version="1.0" encoding="UTF-8"?>
     <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03">
         <CstmrCdtTrfInitn>
+            <GrpHdr><MsgId>MULTIPLE-TX</MsgId></GrpHdr>
             <PmtInf>
-                <PmtId><InstrId>TX-1</InstrId></PmtId>
-                <Amt><InstdAmt Ccy="EUR">100</InstdAmt></Amt>
-            </PmtInf>
-            <PmtInf>
-                <PmtId><InstrId>TX-2</InstrId></PmtId>
-                <Amt><InstdAmt Ccy="USD">200</InstdAmt></Amt>
+                <CdtTrfTxInf>
+                    <PmtId><InstrId>TX-1</InstrId></PmtId>
+                    <Amt><InstdAmt Ccy="EUR">100</InstdAmt></Amt>
+                </CdtTrfTxInf>
+                <CdtTrfTxInf>
+                    <PmtId><InstrId>TX-2</InstrId></PmtId>
+                    <Amt><InstdAmt Ccy="USD">200</InstdAmt></Amt>
+                </CdtTrfTxInf>
             </PmtInf>
         </CstmrCdtTrfInitn>
     </Document>"""

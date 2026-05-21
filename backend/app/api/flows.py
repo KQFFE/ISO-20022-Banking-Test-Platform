@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from app.db.session import get_db
 from app.db.models import Flow
 
@@ -22,8 +22,7 @@ class FlowCreate(BaseModel):
 class FlowRead(FlowCreate):
     id: int
 
-    class Config:
-        from_attributes = True # For Pydantic v2, use from_attributes = True. For Pydantic v1, use orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 @router.get("/", response_model=List[FlowRead])
 def list_flows(db: Session = Depends(get_db)):
@@ -33,7 +32,7 @@ def list_flows(db: Session = Depends(get_db)):
 @router.post("/", response_model=FlowRead)
 def create_flow(flow: FlowCreate, db: Session = Depends(get_db)):
     """Creates a new flow definition."""
-    db_flow = Flow(**flow.dict())
+    db_flow = Flow(**flow.model_dump())
     db.add(db_flow)
     db.commit()
     db.refresh(db_flow)
@@ -46,7 +45,7 @@ def update_flow(flow_id: int, flow: FlowCreate, db: Session = Depends(get_db)):
     if not db_flow:
         raise HTTPException(status_code=404, detail="Flow definition not found")
     
-    update_data = flow.dict()
+    update_data = flow.model_dump()
     for key, value in update_data.items():
         setattr(db_flow, key, value)
     

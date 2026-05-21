@@ -44,7 +44,7 @@ async def download_output(filename: str, inline: bool = False):
         path=file_path, 
         media_type='application/xml',
         content_disposition_type="inline" if inline else "attachment",
-        filename=None if inline else filename
+        filename=filename
     )
 
 @router.delete("/{transaction_id}")

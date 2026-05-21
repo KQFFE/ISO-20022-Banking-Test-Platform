@@ -114,7 +114,7 @@ def execute_iso_transaction(db: Session, transaction_id: int):
         raise HTTPException(status_code=404, detail="Transaction not found")
     flow = db.query(Flow).filter(Flow.id == tx.flow_id).first()
     output_format = (flow.message_format if flow else "CAMT.054").upper()
-    flow_data_dict = FlowRead.from_orm(flow).dict() if flow else {}
+    flow_data_dict = FlowRead.model_validate(flow).model_dump() if flow else {}
     GeneratorClass = generator_registry.get(output_format)
     if not GeneratorClass:
         raise HTTPException(status_code=400, detail=f"No generator found for format: {output_format}")

@@ -39,32 +39,19 @@ This project aims to comply with **WCAG 2.1 AA** standards:
 - Python 3.9+
 - Node.js & npm
 
-### 2. Backend Setup
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-2. Create and activate a virtual environment:
-   ```bash
-   python -m venv venv
-   # Windows:
-   .\venv\Scripts\activate
-   # macOS/Linux:
-   source venv/bin/activate
-   ```
-
 ### Simplified Setup & Development (From Project Root)
 
-This project uses `npm` scripts at the root to orchestrate both backend (Python) and frontend (React) development.
+This project uses `npm` scripts at the root to orchestrate both backend (Python) and frontend (React) development. The setup is designed to be "one-command" where possible.
 
 1.  **Initial Setup (One-time)**:
-    This command creates the Python virtual environment, installs all Python dependencies, installs Node.js dependencies for both the root and frontend, and sets up Alembic.
+    Simply run the following command in the project root. It will install root dependencies, create a Python virtual environment, install `backend/requirements.txt`, and install `frontend/package.json`.
     ```bash
-    # From the project root (d:\Dev\IKANO testapp\)
-    npm install # Installs root npm dependencies
-    npm run install:backend # Installs Python dependencies
-    npm run install:frontend # Installs frontend npm dependencies
-    # Then, for database setup (if not already done):
+    npm install
+    ```
+
+2.  **Database Setup**:
+    After the initial install, apply the database migrations:
+    ```bash
     # cd backend && alembic upgrade head
     ``` 
 
