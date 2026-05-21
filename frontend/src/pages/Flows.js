@@ -113,6 +113,7 @@ function Flows() {
             <label htmlFor="flow-name" className="text-sm font-medium text-gray-700 mb-1">Flow Name</label>
             <input 
               id="flow-name"
+              data-testid="flow-name-input"
               className="border p-2 rounded" 
               placeholder="e.g. SEPA Outbound" 
               value={newFlow.name}
@@ -201,7 +202,11 @@ function Flows() {
             </label>
           </div>
           <div className="flex gap-2">
-            <button type="submit" className="flex-1 bg-blue-600 text-white rounded p-2 hover:bg-blue-700">
+            <button 
+              type="submit" 
+              data-testid="flow-submit-button"
+              className="flex-1 bg-blue-600 text-white rounded p-2 hover:bg-blue-700"
+            >
               {editingId ? 'Update Flow' : 'Add Flow'}
             </button>
             {editingId && (

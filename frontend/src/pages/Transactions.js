@@ -12,6 +12,7 @@ function Transactions() {
   const [error, setError] = useState('');
   const [errorDetailTx, setErrorDetailTx] = useState(null);
   const modalRef = useRef(null); // Ref for the modal container
+  const fileInputRef = useRef(null); // Ref for the file input
   const prevActiveElement = useRef(null); // To store the element that had focus before modal opened
 
   const fetchTransactions = useCallback(async () => {
@@ -113,6 +114,9 @@ function Transactions() {
       });
       setUploadMessage(`Upload successful: ${response.data.transactions_imported} transactions imported.`);
       setSelectedFile(null); // Clear selected file
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""; // Clear the native file input UI
+      }
       fetchTransactions();
     } catch (err) {
       console.error("Upload error:", err.response ? err.response.data : err.message);
@@ -163,20 +167,21 @@ function Transactions() {
       <div className="mb-6 p-4 border rounded-lg bg-white shadow-sm">
         <h2 className="text-xl font-semibold mb-3">Upload ISO 20022 File</h2>
         {error && <p className="text-red-500 mb-2">{error}</p>}
-        {uploadMessage && <p className="text-green-600 mb-2">{uploadMessage}</p>}
+        {uploadMessage && <p data-testid="upload-status-message" className="text-green-600 mb-2">{uploadMessage}</p>}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="flex flex-col">
             <label htmlFor="flow-select" className="block text-sm font-medium text-gray-700 mb-1">Target Flow Configuration</label>
             <select
               id="flow-select"
+              data-testid="flow-select"
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 border-gray-500 focus:outline-none focus:ring-2 focus:ring-black focus:border-black sm:text-sm rounded-md transition-all"
               value={selectedFlowId}
               onChange={handleFlowChange}
             >
               <option value="">-- Select a Flow --</option>
               {flows.map((flow) => (
-                <option key={flow.id} value={flow.id}>
+                <option key={flow.id} value={flow.id} data-testid="flow-option">
                   {flow.name} ({flow.message_format})
                 </option>
               ))}
@@ -186,6 +191,8 @@ function Transactions() {
             <label htmlFor="iso-file-upload" className="block text-sm font-medium text-gray-700 mb-1">ISO 20022 XML File</label>
             <input 
               id="iso-file-upload" 
+              ref={fileInputRef}
+              data-testid="iso-file-upload"
               type="file" 
               accept=".xml"
               onChange={handleFileChange} 
@@ -196,6 +203,7 @@ function Transactions() {
         <button
           onClick={handleUpload}
           disabled={!selectedFile || !selectedFlowId}
+          data-testid="upload-button"
           className="mt-4 px-4 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Upload and Process
@@ -234,6 +242,7 @@ function Transactions() {
                   {tx.status === 'Validation Failed' ? (
                     <button 
                       onClick={() => setErrorDetailTx(tx)}
+                      data-testid="status-badge-error"
                       className="px-2 py-1 rounded-full text-xs bg-red-100 text-red-800 hover:bg-red-200 transition-colors font-semibold underline decoration-dotted"
                       aria-label={`View validation errors for ${tx.instruction_id}`}
                     >

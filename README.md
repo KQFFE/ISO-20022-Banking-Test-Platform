@@ -137,7 +137,8 @@ Focuses on API integrity, database persistence, and ISO 20022 logic.
 Focuses on user journeys, accessibility, and UI interactions (e.g., file uploads, modal behavior).
 - **Prerequisites**: Before running for the first time, install the required browser binaries:
   ```bash
-  npx playwright install chromium
+  # From the project root
+  npm run test:frontend:install
   ```
 - **Location**: `frontend/e2e/transactions.spec.js`
 - **Run command**:

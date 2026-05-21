@@ -33,6 +33,8 @@ def test_pain_001_multiple_transactions():
         <CstmrCdtTrfInitn>
             <GrpHdr><MsgId>MULTIPLE-TX</MsgId></GrpHdr>
             <PmtInf>
+                <DbtrAgt><FinInstnId><BIC>TESTBICC</BIC></FinInstnId></DbtrAgt>
+                <DbtrAcct><Id><IBAN>DE123</IBAN></Id></DbtrAcct>
                 <CdtTrfTxInf>
                     <PmtId><InstrId>TX-1</InstrId></PmtId>
                     <Amt><InstdAmt Ccy="EUR">100</InstdAmt></Amt>
