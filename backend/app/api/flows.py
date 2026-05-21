@@ -17,6 +17,7 @@ class FlowCreate(BaseModel):
     special_character_support: Optional[bool] = False
     back_dated: Optional[bool] = False
     future_dated: Optional[bool] = False
+    duplicate_check: Optional[bool] = False
 
 class FlowRead(FlowCreate):
     id: int

@@ -14,7 +14,8 @@ function Flows() {
     valid_ibans: [],
     special_character_support: false,
     back_dated: false,
-    future_dated: false
+    future_dated: false,
+    duplicate_check: false
   });
   const [editingId, setEditingId] = useState(null);
   const [bicString, setBicString] = useState('');
@@ -61,10 +62,10 @@ function Flows() {
         file_format: 'XML',
         special_character_support: false,
         back_dated: false,
-        future_dated: false
+        future_dated: false,
+        duplicate_check: false
       });
       fetchFlows();
-      e.target.reset();
     } catch (err) {
       console.error("Error creating flow:", err);
     }
@@ -75,13 +76,14 @@ function Flows() {
     setBicString(flow.bic_codes.join(', '));
     setIbanString(flow.valid_ibans.join(', '));
     setNewFlow({
-      name: flow.name,
-      direction: flow.direction,
-      message_format: flow.message_format,
-      file_format: flow.file_format,
-      special_character_support: flow.special_character_support,
-      back_dated: flow.back_dated,
-      future_dated: flow.future_dated
+      name: flow.name || '',
+      direction: flow.direction || 'Outbound',
+      message_format: flow.message_format || '',
+      file_format: flow.file_format || 'XML',
+      special_character_support: !!flow.special_character_support,
+      back_dated: !!flow.back_dated,
+      future_dated: !!flow.future_dated,
+      duplicate_check: !!flow.duplicate_check
     });
     // Scroll to form
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -170,21 +172,32 @@ function Flows() {
               />
               Special Character Support
             </label>
-            <label className="flex items-center gap-2 text-sm">
+            <label htmlFor="back-dated-check" className="flex items-center gap-2 text-sm">
               <input 
+                id="back-dated-check"
                 type="checkbox" 
                 checked={newFlow.back_dated}
                 onChange={(e) => setNewFlow({...newFlow, back_dated: e.target.checked})}
               />
               Allow Back Dated
             </label>
-            <label className="flex items-center gap-2 text-sm">
+            <label htmlFor="future-dated-check" className="flex items-center gap-2 text-sm">
               <input 
+                id="future-dated-check"
                 type="checkbox" 
                 checked={newFlow.future_dated}
                 onChange={(e) => setNewFlow({...newFlow, future_dated: e.target.checked})}
               />
               Allow Future Dated
+            </label>
+            <label htmlFor="duplicate-check" className="flex items-center gap-2 text-sm">
+              <input 
+                id="duplicate-check"
+                type="checkbox" 
+                checked={newFlow.duplicate_check}
+                onChange={(e) => setNewFlow({...newFlow, duplicate_check: e.target.checked})}
+              />
+              Duplicate Check
             </label>
           </div>
           <div className="flex gap-2">
@@ -205,7 +218,8 @@ function Flows() {
                     file_format: 'XML',
                     special_character_support: false,
                     back_dated: false,
-                    future_dated: false
+                    future_dated: false,
+                    duplicate_check: false
                   });
                 }}
                 className="px-4 bg-gray-500 text-white rounded hover:bg-gray-600">

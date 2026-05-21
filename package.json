@@ -10,6 +10,7 @@
     "backend": "cd backend && (venv\\Scripts\\python -m uvicorn app.main:app --reload --host localhost --port 8000 || ./venv/bin/python -m uvicorn app.main:app --reload --host localhost --port 8000)",
     "dev:backend": "npm run backend",
     "frontend": "set \"CHOKIDAR_USEPOLLING=true\" && set \"WDS_SOCKET_PORT=3000\" && npm start --prefix frontend || CHOKIDAR_USEPOLLING=true WDS_SOCKET_PORT=3000 npm start --prefix frontend",
+    "test:frontend": "cd frontend && npx playwright test",
     "dev:frontend": "npm run frontend",
     "dev:all": "echo 'Please run backend and frontend in separate terminals using npm run backend and npm run frontend'"
   }

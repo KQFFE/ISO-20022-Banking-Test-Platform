@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
-from app.api import auth, trans, flows
+from app.api import auth, transactions, flows
 from app.db.session import get_db
 from app.db.models import Transaction, Flow
 from fastapi import Depends
@@ -39,7 +39,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # 3. Include Routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(trans.router, prefix="/transactions", tags=["Transactions"])
+app.include_router(transactions.router, prefix="/transactions", tags=["Transactions"])
 app.include_router(flows.router, prefix="/flows", tags=["Flows"])
 
 # 4. Stats Endpoint (used by Dashboard.js)

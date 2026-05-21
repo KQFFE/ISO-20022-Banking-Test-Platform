@@ -19,11 +19,11 @@ This project aims to comply with **WCAG 2.1 AA** standards:
 - **Robust**: Use of semantic HTML and ARIA landmarks where necessary.
 
 ### Backend (Python / FastAPI)
-- `backend/app/api/`: REST API endpoints for authentication, flow management, and transaction handling (including file uploads and parsing).
+- `backend/app/api/`: REST API routing (e.g., `transactions.py`, `flows.py`) for handling HTTP requests.
 - `backend/app/core/`: Configuration (Environment variables) and Security (SSO/OAuth).
 - `backend/app/db/`: Database models (SQLAlchemy for `Flow` and `Transaction` entities) and session management.
 - `backend/app/parsers/`: The "Brain" of the app. Contains logic for parsing and validating ISO 20022 XML files (e.g., Pain.001, Camt.054).
-- `backend/app/services/`: Business logic for file management and triggering flow executions (to be implemented).
+- `backend/app/services/`: Reusable business logic for file processing and flow execution (`transaction_service.py`).
 - `backend/uploads/`: Local directory for storing uploaded input files.
 - `backend/outputs/`: Local directory where generated ISO 20022 response files (e.g. CAMT.054) are saved.
 
@@ -67,9 +67,6 @@ This project uses `npm` scripts at the root to orchestrate both backend (Python)
     # Then, for database setup (if not already done):
     # cd backend && alembic upgrade head
     ``` 
-
-2.  **Start Development Servers**:
-    Use the universal `npm` commands from the project root to start both tiers. The scripts handle virtual environment paths automatically across Windows and Linux. **Run these in separate terminal windows.**
 
 2.  **Start Development Servers**:
     Use the universal `npm` commands from the project root to start both tiers. The scripts handle virtual environment paths automatically across Windows and Linux. **Run these in separate terminal windows.**
@@ -134,23 +131,45 @@ If your editor (VS Code, PyCharm, etc.) still flags imports as missing:
    ```
    The frontend will be available at `http://localhost:3000`.
 
-## How to Test the App
+## Testing
 
-Once the application is running:
+### 1. Automated Testing
+This project uses a combination of `pytest` for the backend and `Playwright` for frontend end-to-end (E2E) testing.
 
-1. **Go to "Flow Definitions"**: Fill out the "Create New Flow" form.
-   - **Name**: SEPA Test
-   - **Direction**: Outbound
-   - **Message Format**: Pain.001
-   - Click **Add Flow**.
+#### Backend Tests (Pytest)
+Focuses on API integrity, database persistence, and ISO 20022 logic.
+- **Location**: `backend/tests/test_api.py`
+- **Setup**: Ensure `pytest` and `httpx` are installed (included in `requirements.txt`).
+- **Run command**:
+  ```bash
+  cd backend
+  pytest
+  ```
+
+#### Frontend Tests (Playwright E2E)
+Focuses on user journeys, accessibility, and UI interactions (e.g., file uploads, modal behavior).
+- **Prerequisites**: Before running for the first time, install the required browser binaries:
+  ```bash
+  npx playwright install chromium
+  ```
+- **Location**: `frontend/e2e/transactions.spec.js`
+- **Run command**:
+  ```bash
+  # From the project root
+  npm run test:frontend
+  ```
+
+### 2. Manual Testing (Golden Path)
+To verify the application manually:
+1. **Go to "Flow Definitions"**: Create a configuration (e.g., Name: `SEPA Test`, Format: `Pain.001`).
 2. **Go to "Transactions"**:
-   - The "Select Flow" dropdown will now show **SEPA Test**. Select it.
-   - Select your `test_payment.xml` file.
+   - Select the flow you just created.
+   - Upload a valid `.xml` file.
    - Click **Upload and Process**.
 3. **View Results**:
-   - A row will appear in the "Processed Transactions" table.
-   - The **Generate Output** button will be active.
-   - Clicking it will create the **CAMT.054** file in your `backend/outputs/` folder.
+   - Verify the "System ID" appears in the table.
+   - Click **Generate Output** to produce a CAMT.054 notification.
+   - Use **View** or **Download** to inspect the resulting XML.
 
 > **Note on Styling**: This project uses Tailwind CSS. If the UI looks unstyled, ensure you have Tailwind configured or add the Tailwind Play CDN to your `frontend/public/index.html` for testing purposes.
 

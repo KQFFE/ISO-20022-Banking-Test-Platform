@@ -22,6 +22,7 @@ class Flow(Base):
     special_character_support = Column(Boolean, default=False)
     back_dated = Column(Boolean, default=False)
     future_dated = Column(Boolean, default=False)
+    duplicate_check = Column(Boolean, default=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 class Transaction(Base):
