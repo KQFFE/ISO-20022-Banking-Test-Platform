@@ -8,6 +8,7 @@ venv/
 env/
 ENV/
 build/
+*.log
 dist/
 
 # Database
@@ -30,6 +31,11 @@ build/
 .pnp
 .pnp.js
 
+# Playwright artifacts
+frontend/playwright-report/
+frontend/test-results/
+frontend/test-snapshots/
+
 # IDEs
 .vscode/
 .idea/
@@ -38,3 +44,4 @@ build/
 
 # OS files
 .DS_Store
+Thumbs.db

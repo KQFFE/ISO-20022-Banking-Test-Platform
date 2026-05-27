@@ -1,0 +1,10 @@
+* text=auto
+
+# Explicitly set line endings for code files to LF
+# This ensures consistency across Windows/Mac/Linux
+*.py text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.md text eol=lf
