@@ -47,8 +47,8 @@ npm install
 cd backend
 
 # Activate virtual environment
-Windows: .\venv\Scripts\activate
-macOS/Linux: source venv/bin/activate
+Windows: .\backend\venv\Scripts\activate
+macOS/Linux: source backend/venv/bin/activate
 
 alembic upgrade head
 ```
@@ -91,4 +91,6 @@ npm run test:frontend
 
 ### Troubleshooting
 - **Database Migrations**: If `alembic upgrade head` fails with a naming convention error, ensure the migration script explicitly names constraints for SQLite batch mode.
-- **Python Imports**: Ensure your IDE is using the virtual environment located at `backend/venv/Scripts/python.exe`.
+- **Python Imports (Yellow/Red Squiggles)**: 
+    1. In VS Code, run `Python: Select Interpreter` and point to `backend/venv/Scripts/python.exe`.
+    2. If issues persist, ensure the `backend` directory is added to your IDE's "Source Roots" or `python.analysis.extraPaths`.

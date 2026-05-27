@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('Transaction Lifecycle', () => {
-  const testFlowName = 'E2E Test Flow ' + Date.now();
+  const testFlowName = '[TEST] E2E Flow ' + Date.now();
   const today = new Date().toISOString().split('T')[0];
   const validXml = `<?xml version="1.0" encoding="UTF-8"?>
     <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03">
@@ -22,6 +22,21 @@ test.describe('Transaction Lifecycle', () => {
         </PmtInf>
       </CstmrCdtTrfInitn>
     </Document>`;
+
+  // Robust Cleanup: Runs even if the test fails midway
+  test.afterEach(async ({ page }) => {
+    try {
+      await page.goto('/flows');
+      const flowRow = page.locator('tr', { hasText: testFlowName });
+      if (await flowRow.count() > 0) {
+        page.on('dialog', dialog => dialog.accept()); 
+        await flowRow.getByLabel(`Delete flow ${testFlowName}`).click();
+        await expect(page.locator('table')).not.toContainText(testFlowName);
+      }
+    } catch (e) {
+      console.log('Cleanup navigation failed or flow already deleted');
+    }
+  });
 
   test('should create a flow and handle duplicate file uploads', async ({ page }) => {
     // 1. Setup: Create a Flow with Duplicate Check enabled
@@ -77,13 +92,5 @@ test.describe('Transaction Lifecycle', () => {
     await expect(modal).toContainText('Duplicate Error');
     await page.getByLabel('Close modal').click();
     await expect(modal).not.toBeVisible();
-
-    // 8. Cleanup: Delete the flow created for this test
-    // This will cascade and delete all transactions associated with it.
-    await page.goto('/flows');
-    const flowRow = page.locator('tr', { hasText: testFlowName });
-    await page.on('dialog', dialog => dialog.accept()); // Automatically accept the confirmation window
-    await flowRow.getByLabel(`Delete flow ${testFlowName}`).click();
-    await expect(page.locator('table')).not.toContainText(testFlowName);
   });
 });
