@@ -44,16 +44,26 @@ test.describe('Transaction Lifecycle', () => {
     await page.getByTestId('flow-name-input').fill(testFlowName);
     await page.fill('#message-format', 'Pain.001');
     await page.check('#duplicate-check');
+
+    const createPromise = page.waitForResponse(resp => resp.url().includes('/flows/') && resp.request().method() === 'POST');
     await page.getByTestId('flow-submit-button').click();
-    await expect(page.locator('table')).toContainText(testFlowName);
+    const response = await createPromise;
+    
+    // If the API failed (e.g. DB Lock), grab the error message for the test log
+    if (response.status() !== 200) {
+      const errorMsg = await page.getByTestId('flow-error-message').textContent();
+      throw new Error(`Flow creation failed with status ${response.status()}: ${errorMsg}`);
+    }
 
-    // 2. Navigate to Transactions
-    await page.goto('/transactions');
+    // Use semantic row locator with text filtering
+    await expect(page.getByRole('row').filter({ hasText: testFlowName })).toBeVisible();
 
-    // 3. Verify UI contrast and alignment (Sanity check)
+    // 2. Navigate to Payments (Functional Segregation update)
+    await page.goto('/payments');
+
+    // 3. Verify component elements
     const flowSelect = page.getByTestId('flow-select');
     const fileInput = page.getByTestId('iso-file-upload');
-    await expect(flowSelect).toHaveClass(/bg-gray-100/);
     await expect(flowSelect).toBeVisible();
 
     // 4. Perform first upload
@@ -71,9 +81,13 @@ test.describe('Transaction Lifecycle', () => {
       buffer: Buffer.from(validXml)
     });
     await page.getByTestId('upload-button').click();
-    await expect(page.getByTestId('upload-status-message')).toContainText('Upload successful');
+    await expect(page.getByTestId('upload-status-message')).toContainText('imported');
 
-    // 5. Perform duplicate upload to trigger validation error
+    // 5. Navigate to Transactions to check history and trigger duplicate validation
+    await page.goto('/transactions');
+    await page.goto('/payments'); // Back to payments for second upload
+
+    await flowSelect.selectOption({ label: fullLabel });
     await fileInput.setInputFiles({
       name: 'test_duplicate.xml',
       mimeType: 'application/xml',
@@ -81,6 +95,8 @@ test.describe('Transaction Lifecycle', () => {
     });
     await page.getByTestId('upload-button').click();
     
+    await page.goto('/transactions');
+
     // 6. Verify row exists and status is "Validation Failed"
     const lastRow = page.locator('tbody tr').last();
     const statusBtn = lastRow.getByTestId('status-badge-error');

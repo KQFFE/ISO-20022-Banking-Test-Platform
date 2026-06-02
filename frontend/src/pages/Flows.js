@@ -22,6 +22,8 @@ function Flows() {
   const [editingId, setEditingId] = useState(null);
   const [bicString, setBicString] = useState('');
   const [ibanString, setIbanString] = useState('');
+  const [error, setError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const fetchFlows = async () => {
     try {
@@ -38,6 +40,8 @@ function Flows() {
 
   const handleCreateFlow = async (e) => {
     e.preventDefault();
+    setError('');
+    setIsSaving(true);
     const bicArray = bicString.split(',').map(s => s.trim()).filter(s => s);
     const ibanArray = ibanString.split(',').map(s => s.trim()).filter(s => s);
 
@@ -62,6 +66,8 @@ function Flows() {
         direction: 'Outbound',
         message_format: 'Pain.001',
         file_format: 'XML',
+        bic_codes: [],
+        valid_ibans: [],
         special_character_support: false,
         back_dated: false,
         future_dated: false,
@@ -72,6 +78,9 @@ function Flows() {
       fetchFlows();
     } catch (err) {
       console.error("Error creating flow:", err);
+      setError(err.response?.data?.detail || "Connection error. Is the backend running?");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -111,6 +120,7 @@ function Flows() {
       <h1 className="text-2xl font-bold mb-4">Flow Definitions</h1>
 
       <div className="mb-8 p-4 bg-white shadow rounded-lg">
+        {error && <p data-testid="flow-error-message" className="mb-4 p-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded">{error}</p>}
         <h2 className="text-lg font-semibold mb-4">
           {editingId ? `Editing Flow: ${newFlow.name}` : 'Create New Flow'}
         </h2>
@@ -241,9 +251,10 @@ function Flows() {
             <button 
               type="submit" 
               data-testid="flow-submit-button"
-              className="flex-1 bg-blue-600 text-white rounded p-2 hover:bg-blue-700"
+              disabled={isSaving}
+              className="flex-1 bg-blue-600 text-white rounded p-2 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-wait"
             >
-              {editingId ? 'Update Flow' : 'Add Flow'}
+              {isSaving ? 'Processing...' : (editingId ? 'Update Flow' : 'Add Flow')}
             </button>
             {editingId && (
               <button 
@@ -273,7 +284,7 @@ function Flows() {
         </form>
       </div>
 
-      <div className="bg-white shadow rounded-lg">
+      <div className="bg-white shadow rounded-lg" data-testid="flow-list">
         <FlowList flows={flows} onDelete={handleDeleteFlow} onEdit={handleEditInitiate} />
       </div>
     </div>

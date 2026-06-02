@@ -12,7 +12,7 @@
     "test:backend": "cd backend && pytest",
     "test:backend:cov": "cd backend && pytest --cov=app --cov-report=html",
     "frontend": "set \"CHOKIDAR_USEPOLLING=true\" && set \"WDS_SOCKET_PORT=3000\" && npm start --prefix frontend || CHOKIDAR_USEPOLLING=true WDS_SOCKET_PORT=3000 npm start --prefix frontend",
-    "test:frontend": "cd frontend && npx playwright test",
+    "test:frontend": "cd frontend && npx playwright test --workers 1",
     "test:frontend:install": "cd frontend && npx playwright install chromium",
     "dev:frontend": "npm run frontend",
     "dev:all": "echo 'Please run backend and frontend in separate terminals using npm run backend and npm run frontend'"

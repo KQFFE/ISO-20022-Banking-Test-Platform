@@ -82,6 +82,7 @@ function Payments() {
             <label htmlFor="flow-select" className="block text-sm font-medium text-gray-700 mb-2">Target Payment Flow</label>
             <select
               id="flow-select"
+              data-testid="flow-select"
               className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
               value={selectedFlowId}
               onChange={handleFlowChange}
@@ -98,6 +99,7 @@ function Payments() {
             <label htmlFor="iso-file-upload" className="block text-sm font-medium text-gray-700 mb-2">ISO 20022 XML (pain/camt)</label>
             <input 
               id="iso-file-upload" 
+              data-testid="iso-file-upload"
               ref={fileInputRef}
               type="file" 
               accept=".xml"
@@ -108,6 +110,7 @@ function Payments() {
         </div>
         <button
           onClick={handleUpload}
+          data-testid="upload-button"
           disabled={!selectedFile || !selectedFlowId}
           className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white font-bold rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
         >
