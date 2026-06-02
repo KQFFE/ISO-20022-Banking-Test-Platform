@@ -1,14 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 const MOCK_IBANS = {
   'SE': ['SE12345678901234567890', 'SE98765432109876543210'],
   'DE': ['DE12345678901234567890', 'DE88887777666655554444'],
   'NO': ['NO12345678901', 'NO99887766554'],
-  'FI': ['FI1234567890123456', 'FI5544332211009988']
+  'FI': ['FI1234567890123456', 'FI5544332211009988'],
+  'UK': ['GB29PIGB00000012345678', 'GB29PIGB00000087654321'],
+  'US': ['US123456789012345678', 'US987654321098765432'],
+  'LU': ['LU123456789012345678', 'LU987654321098765432']
 };
+
+const FLOW_SYSTEMS = [
+  'Business Central',
+  'FirstVision',
+  'iCard',
+  'Navision',
+  'NETS',
+  'NFS-Ascent',
+  'Therefore'
+];
 
 function TestFiles() {
   const [fileType, setFileType] = useState('pain.001.001.03');
+  const [flow, setFlow] = useState('Business Central (Outbound)');
   const [country, setCountry] = useState('SE');
   const [isCrossBorder, setIsCrossBorder] = useState(false);
   const [targetCountry, setTargetCountry] = useState('DE');
@@ -21,7 +35,29 @@ function TestFiles() {
     }
   }, [country]);
 
+  // Sort systems alphabetically and generate option strings
+  const sortedFlowOptions = useMemo(() => {
+    return [...FLOW_SYSTEMS].sort((a, b) => a.localeCompare(b)).flatMap(system => [
+      `${system} (Inbound)`,
+      `${system} (Outbound)`
+    ]);
+  }, []);
+
+  // Auto-populate logic: adjusting file type defaults based on flow direction
+  useEffect(() => {
+    if (flow.includes('(Inbound)')) {
+      setFileType('camt.054.001.02');
+    } else if (flow.includes('(Outbound)')) {
+      setFileType('pain.001.001.03');
+    }
+  }, [flow]);
+
   const handleDownload = () => {
+    // Determine the Creditor IBAN based on the scenario
+    const creditorIban = isCrossBorder 
+      ? MOCK_IBANS[targetCountry][0] 
+      : (MOCK_IBANS[country].find(iban => iban !== selectedIban) || selectedIban);
+
     const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:${fileType}">
   <CstmrCdtTrfInitn>
@@ -33,7 +69,7 @@ function TestFiles() {
       <DbtrAcct><Id><IBAN>${selectedIban}</IBAN></Id></DbtrAcct>
       <CdtTrfTxInf>
         <Amt><InstdAmt Ccy="EUR">100.00</InstdAmt></Amt>
-        <CdtrAcct><Id><IBAN>${isCrossBorder ? MOCK_IBANS[targetCountry][0] : selectedIban}</IBAN></Id></CdtrAcct>
+        <CdtrAcct><Id><IBAN>${creditorIban}</IBAN></Id></CdtrAcct>
       </CdtTrfTxInf>
     </PmtInf>
   </CstmrCdtTrfInitn>
@@ -70,6 +106,33 @@ function TestFiles() {
             </select>
           </div>
 
+          {/* Flow Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Target Flow</label>
+            <div className="relative">
+              <input
+                list="flow-options-generator"
+                type="text"
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2 border"
+                placeholder="Search and pick a flow..."
+                value={flow}
+                onChange={(e) => setFlow(e.target.value)}
+              />
+              <datalist id="flow-options-generator">
+                {sortedFlowOptions.map(opt => <option key={opt} value={opt} />)}
+              </datalist>
+              {flow && (
+                <button 
+                  onClick={() => setFlow('')}
+                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                  title="Clear selection"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Country Selection */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -79,7 +142,11 @@ function TestFiles() {
                 onChange={(e) => setCountry(e.target.value)}
                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2 border"
               >
-                {Object.keys(MOCK_IBANS).map(c => <option key={c} value={c}>{c}</option>)}
+                {/* Priority Nordic Group */}
+                {['SE', 'NO', 'FI'].map(c => <option key={c} value={c}>{c}</option>)}
+                <option disabled>──────────</option>
+                {/* Alphabetical Group */}
+                {['DE', 'LU', 'UK', 'US'].sort().map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             
@@ -119,9 +186,12 @@ function TestFiles() {
                 onChange={(e) => setTargetCountry(e.target.value)}
                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2 border"
               >
-                {Object.keys(MOCK_IBANS).filter(c => c !== country).map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
+                {Object.keys(MOCK_IBANS)
+                  .filter(c => c !== country)
+                  .sort()
+                  .map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
               </select>
               <p className="mt-2 text-xs text-gray-500 italic">
                 Generated file will use a {targetCountry} IBAN for the Creditor.

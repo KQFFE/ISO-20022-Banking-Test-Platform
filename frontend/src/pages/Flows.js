@@ -15,7 +15,9 @@ function Flows() {
     special_character_support: false,
     back_dated: false,
     future_dated: false,
-    duplicate_check: false
+    duplicate_check: false,
+    currency_validation: false,
+    allowed_currency: ''
   });
   const [editingId, setEditingId] = useState(null);
   const [bicString, setBicString] = useState('');
@@ -63,7 +65,9 @@ function Flows() {
         special_character_support: false,
         back_dated: false,
         future_dated: false,
-        duplicate_check: false
+        duplicate_check: false,
+        currency_validation: false,
+        allowed_currency: ''
       });
       fetchFlows();
     } catch (err) {
@@ -83,7 +87,9 @@ function Flows() {
       special_character_support: !!flow.special_character_support,
       back_dated: !!flow.back_dated,
       future_dated: !!flow.future_dated,
-      duplicate_check: !!flow.duplicate_check
+      duplicate_check: !!flow.duplicate_check,
+      currency_validation: !!flow.currency_validation,
+      allowed_currency: flow.allowed_currency || ''
     });
     // Scroll to form
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -153,16 +159,6 @@ function Flows() {
               onChange={(e) => setBicString(e.target.value)}
             />
           </div>
-          <div className="flex flex-col">
-            <label htmlFor="iban-patterns" className="text-sm font-medium text-gray-700 mb-1">IBAN Patterns</label>
-            <input 
-              id="iban-patterns"
-              className="border p-2 rounded" 
-              placeholder="e.g. DE%, FR123" 
-              value={ibanString}
-              onChange={(e) => setIbanString(e.target.value)}
-            />
-          </div>
           <div className="flex flex-col gap-2 p-2">
             <label className="flex items-center gap-2 text-sm">
               <input 
@@ -200,7 +196,47 @@ function Flows() {
               />
               Duplicate Check
             </label>
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <label htmlFor="currency-validation" className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <input 
+                  id="currency-validation"
+                  type="checkbox" 
+                  checked={newFlow.currency_validation}
+                  onChange={(e) => setNewFlow({...newFlow, currency_validation: e.target.checked})}
+                />
+                Currency Validation
+              </label>
+              <select 
+                id="allowed-currency"
+                className={`w-full border p-2 rounded text-sm ${!newFlow.currency_validation ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-white text-gray-900'}`}
+                value={newFlow.allowed_currency}
+                onChange={(e) => setNewFlow({...newFlow, allowed_currency: e.target.value})}
+                disabled={!newFlow.currency_validation}
+                required={newFlow.currency_validation}
+                onInvalid={(e) => e.target.setCustomValidity('Select a currency to continue.')}
+                onInput={(e) => e.target.setCustomValidity('')}
+              >
+                <option value="">-- Select Currency --</option>
+                <option value="SEK">SEK</option>
+                <option value="DKK">DKK</option>
+                <option value="NOK">NOK</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
           </div>
+          <div className="flex flex-col">
+            <label htmlFor="iban-patterns" className="text-sm font-medium text-gray-700 mb-1">IBAN Patterns</label>
+            <input 
+              id="iban-patterns"
+              className="border p-2 rounded" 
+              placeholder="e.g. DE%, FR123" 
+              value={ibanString}
+              onChange={(e) => setIbanString(e.target.value)}
+            />
+          </div>
+          <div className="hidden md:block"></div> {/* Spacer to keep buttons in bottom right */}
           <div className="flex gap-2">
             <button 
               type="submit" 
@@ -224,7 +260,9 @@ function Flows() {
                     special_character_support: false,
                     back_dated: false,
                     future_dated: false,
-                    duplicate_check: false
+                    duplicate_check: false,
+                    currency_validation: false,
+                    allowed_currency: ''
                   });
                 }}
                 className="px-4 bg-gray-500 text-white rounded hover:bg-gray-600">

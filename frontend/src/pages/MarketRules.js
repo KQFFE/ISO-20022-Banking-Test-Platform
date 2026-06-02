@@ -1,4 +1,14 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
+
+const FLOW_SYSTEMS = [
+  'Business Central',
+  'FirstVision',
+  'iCard',
+  'Navision',
+  'NETS',
+  'NFS-Ascent',
+  'Therefore'
+];
 
 const RULES = [
   {
@@ -21,13 +31,67 @@ const RULES = [
 ];
 
 function MarketRules() {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Generate the list of selectable flows similar to TestFiles.js
+  const allFlowOptions = useMemo(() => {
+    return [...FLOW_SYSTEMS].sort((a, b) => a.localeCompare(b)).flatMap(system => [
+      `${system} (Inbound)`,
+      `${system} (Outbound)`
+    ]);
+  }, []);
+
+  // Filter rules based on selection. 
+  // If Inbound is selected, show camt. If Outbound is selected, show pain.
+  // If nothing is selected, show all.
+  const filteredRules = useMemo(() => {
+    if (!searchTerm) return RULES;
+    
+    const isOutbound = searchTerm.toLowerCase().includes('outbound');
+    const isInbound = searchTerm.toLowerCase().includes('inbound');
+
+    if (isOutbound) return RULES.filter(r => r.format.toLowerCase().includes('pain'));
+    if (isInbound) return RULES.filter(r => r.format.toLowerCase().includes('camt'));
+    
+    return RULES;
+  }, [searchTerm]);
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Market Rules & Requirements</h1>
       <p className="text-gray-600 mb-8">Detailed validation logic and requirement specifications per message format.</p>
 
+      {/* Searchable Flow Selection */}
+      <div className="mb-10 max-w-md">
+        <label htmlFor="flow-search" className="block text-sm font-medium text-gray-700 mb-2">
+          Filter Rules by Flow Configuration
+        </label>
+        <div className="relative">
+          <input
+            id="flow-search"
+            list="flow-options"
+            type="text"
+            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5 border"
+            placeholder="Search and pick a flow (e.g. iCard Inbound)..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <datalist id="flow-options">
+            {allFlowOptions.map(option => <option key={option} value={option} />)}
+          </datalist>
+          {searchTerm && (
+            <button 
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="space-y-10">
-        {RULES.map((section) => (
+        {filteredRules.map((section) => (
           <div key={section.format} className="bg-white shadow-sm border rounded-lg overflow-hidden">
             <div className="bg-gray-800 px-6 py-3">
               <h2 className="text-lg font-semibold text-white">{section.format}</h2>
