@@ -17,6 +17,26 @@ OUTPUT_DIR = "outputs"
 if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)
 
+def _validate_transaction_item(item: dict, flow: Flow, index: int) -> list:
+    """Helper to validate a single transaction item against flow rules."""
+    errors = []
+    bic = item.get('bic')
+    iban = item.get('iban')
+    instr_id = item.get('instruction_id') or f"Tx {index+1}"
+    
+    if not ISO20022Validator.validate_bic(bic, flow.bic_codes or []):
+        errors.append(f"{instr_id}: Invalid BIC '{bic}'")
+    if not ISO20022Validator.validate_iban(iban, flow.valid_ibans or []):
+        allowed = ", ".join(flow.valid_ibans) if flow.valid_ibans else "None"
+        errors.append(f"{instr_id}: IBAN '{iban}' does not match allowed patterns: [{allowed}]")
+    if flow.currency_validation and flow.allowed_currency:
+        if not ISO20022Validator.validate_currency(item.get("currency"), flow.allowed_currency):
+            errors.append(f"{instr_id}: Currency Mismatch: Flow requires {flow.allowed_currency}, but found {item.get('currency')}")
+    
+    date_errs = ISO20022Validator.validate_date(item.get('date'), flow.back_dated, flow.future_dated)
+    errors.extend([f"{instr_id}: {err}" for err in date_errs])
+    return errors
+
 async def process_iso_upload(db: Session, flow_id: int, file: UploadFile):
     """
     Service logic to handle ISO 20022 file uploads.
@@ -68,19 +88,8 @@ async def process_iso_upload(db: Session, flow_id: int, file: UploadFile):
                 validation_errors.append(f"Duplicate Error: A file with MsgId '{msg_id}' was already processed (System ID: {existing.id})")
 
         for i, item in enumerate(parsed_data):
-            bic = item.get('bic')
-            iban = item.get('iban')
-            instr_id = item.get('instruction_id') or f"Tx {i+1}"
-            if not ISO20022Validator.validate_bic(bic, flow.bic_codes or []):
-                validation_errors.append(f"{instr_id}: Invalid BIC '{bic}'")
-            if not ISO20022Validator.validate_iban(iban, flow.valid_ibans or []):
-                allowed = ", ".join(flow.valid_ibans) if flow.valid_ibans else "None"
-                validation_errors.append(f"{instr_id}: IBAN '{iban}' does not match allowed patterns: [{allowed}]")
-
-            tx_date = item.get('date')
-            date_errs = ISO20022Validator.validate_date(tx_date, flow.back_dated, flow.future_dated)
-            for err in date_errs:
-                validation_errors.append(f"{instr_id}: {err}")
+            item_errors = _validate_transaction_item(item, flow, i)
+            validation_errors.extend(item_errors)
 
         if validation_errors:
             batch_status = "Validation Failed"

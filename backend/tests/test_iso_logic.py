@@ -68,3 +68,30 @@ def test_iso_validator_iban_patterns():
     assert ISO20022Validator.validate_iban("DE998877", patterns) is True
     assert ISO20022Validator.validate_iban("FR123", patterns) is True
     assert ISO20022Validator.validate_iban("GB123", patterns) is False
+
+def test_iso_validator_currency():
+    assert ISO20022Validator.validate_currency("EUR", "EUR") is True
+    assert ISO20022Validator.validate_currency(" eur ", "EUR") is True
+    assert ISO20022Validator.validate_currency("SEK", "EUR") is False
+    assert ISO20022Validator.validate_currency("EUR", "") is True
+
+def test_iso_validator_edge_cases():
+    # BIC/IBAN None check
+    assert ISO20022Validator.validate_bic(None, ["SOME"]) is False
+    assert ISO20022Validator.validate_iban(None, ["SOME"]) is False
+    
+    # Date missing
+    assert "missing" in ISO20022Validator.validate_date(None, True, True)[0]
+    
+    # Invalid date format
+    assert "Invalid date format" in ISO20022Validator.validate_date("not-a-date", True, True)[0]
+    
+    # Back-dating restriction
+    past_date = "2020-01-01"
+    assert "Back-dating is not permitted" in ISO20022Validator.validate_date(past_date, False, True)[0]
+    assert "too old" in ISO20022Validator.validate_date(past_date, True, True)[0]
+    
+    # Future-dating restriction
+    future_date = "2050-01-01"
+    assert "Future-dating is not permitted" in ISO20022Validator.validate_date(future_date, True, False)[0]
+    assert "too far in the future" in ISO20022Validator.validate_date(future_date, True, True)[0]

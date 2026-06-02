@@ -38,6 +38,13 @@ class ISO20022Validator:
         return False
 
     @staticmethod
+    def validate_currency(extracted_ccy: str, allowed_ccy: str) -> bool:
+        """Checks if the transaction currency matches the flow requirements."""
+        if not allowed_ccy:
+            return True
+        return extracted_ccy.strip().upper() == allowed_ccy.strip().upper()
+
+    @staticmethod
     def validate_date(tx_date: Any, allow_back_dated: bool, allow_future_dated: bool) -> List[str]:
         """
         Validates the transaction date against flow configuration.

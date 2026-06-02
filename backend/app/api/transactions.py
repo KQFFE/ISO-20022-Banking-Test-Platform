@@ -36,6 +36,10 @@ async def execute_transaction(transaction_id: int, db: Session = Depends(get_db)
 @router.get("/download/{filename}")
 async def download_output(filename: str, inline: bool = False):
     """Serves the generated ISO 20022 files."""
+    # Security: Prevent path traversal
+    if ".." in filename or filename.startswith(("/", "\\")):
+        raise HTTPException(status_code=400, detail="Invalid filename format")
+
     file_path = os.path.join(OUTPUT_DIR, filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
@@ -65,3 +69,20 @@ async def delete_transaction(transaction_id: int, db: Session = Depends(get_db))
     db.commit()
     
     return {"status": "Success", "detail": f"Transaction {transaction_id} deleted."}
+
+@router.delete("/")
+async def clear_all_transactions(db: Session = Depends(get_db)):
+    """
+    Clears all transaction records from the database and deletes associated output files.
+    """
+    transactions = db.query(Transaction).all()
+    for tx in transactions:
+        output_file = tx.raw_data.get("output_file") if tx.raw_data else None
+        if output_file:
+            file_path = os.path.join(OUTPUT_DIR, output_file)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+    
+    db.query(Transaction).delete()
+    db.commit()
+    return {"status": "Success", "detail": "All transactions cleared successfully"}

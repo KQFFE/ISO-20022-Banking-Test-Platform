@@ -11,5 +11,6 @@ itsdangerous
 uvicorn[standard]
 pytest
 pytest-asyncio
+pytest-cov
 httpx
 alembic

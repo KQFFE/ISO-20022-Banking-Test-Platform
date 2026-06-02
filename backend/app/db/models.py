@@ -33,6 +33,8 @@ class Flow(Base):
     back_dated = Column(Boolean, default=False)
     future_dated = Column(Boolean, default=False)
     duplicate_check = Column(Boolean, default=False)
+    currency_validation = Column(Boolean, default=False)
+    allowed_currency = Column(String, default="")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationship to allow cascading deletes

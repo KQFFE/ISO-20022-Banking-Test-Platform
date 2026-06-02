@@ -18,6 +18,8 @@ class FlowCreate(BaseModel):
     back_dated: Optional[bool] = False
     future_dated: Optional[bool] = False
     duplicate_check: Optional[bool] = False
+    currency_validation: Optional[bool] = False
+    allowed_currency: Optional[str] = ""
 
 class FlowRead(FlowCreate):
     id: int
@@ -32,7 +34,9 @@ def list_flows(db: Session = Depends(get_db)):
 @router.post("/", response_model=FlowRead)
 def create_flow(flow: FlowCreate, db: Session = Depends(get_db)):
     """Creates a new flow definition."""
-    db_flow = Flow(**flow.model_dump())
+    # Filter flow data to only include keys that exist on the SQLAlchemy model
+    flow_data = flow.model_dump()
+    db_flow = Flow(**{k: v for k, v in flow_data.items() if hasattr(Flow, k)})
     db.add(db_flow)
     db.commit()
     db.refresh(db_flow)
@@ -47,7 +51,8 @@ def update_flow(flow_id: int, flow: FlowCreate, db: Session = Depends(get_db)):
     
     update_data = flow.model_dump()
     for key, value in update_data.items():
-        setattr(db_flow, key, value)
+        if hasattr(db_flow, key):
+            setattr(db_flow, key, value)
     
     db.commit()
     db.refresh(db_flow)

@@ -3,11 +3,11 @@ from typing import Dict, Type
 # Define a base interface for parsers
 class BaseParser:
     def __init__(self, xml_content: bytes):
-        raise NotImplementedError("Subclasses must implement __init__")
+        raise NotImplementedError("Subclasses must implement __init__") # pragma: no cover
     def get_transactions(self) -> list:
-        raise NotImplementedError("Subclasses must implement get_transactions")
+        raise NotImplementedError("Subclasses must implement get_transactions") # pragma: no cover
 
 # Define a base interface for generators
 class BaseGenerator:
     def generate_xml(self, tx_data: dict, flow_data: dict) -> str:
-        raise NotImplementedError("Subclasses must implement generate_xml")
+        raise NotImplementedError("Subclasses must implement generate_xml") # pragma: no cover
