@@ -10,6 +10,11 @@ ENV/
 build/
 *.log
 dist/
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+coverage.xml
 
 # Database
 *.db

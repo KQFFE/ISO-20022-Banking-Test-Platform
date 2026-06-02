@@ -71,13 +71,17 @@ async def process_iso_upload(db: Session, flow_id: int, file: UploadFile):
         parsed_data = parser.get_transactions()
 
         msg_match = re.search(r'<(?:[\w-]*:)?MsgId[^>]*>([^<]+)</(?:[\w-]*:)?MsgId>', xml_str)
-        nb_match = re.search(r'<(?:NbOfTxs|NbOfNtries)>(\d+)</', xml_str)
-        sum_match = re.search(r'<(?:CtrlSum|Sum)>([\d.]+)</', xml_str)
+        nb_match = re.search(r'<(?:[\w-]*:)?(?:NbOfTxs|NbOfNtries)>(\d+)</', xml_str)
+        sum_match = re.search(r'<(?:[\w-]*:)?(?:CtrlSum|Sum)>([\d.]+)</', xml_str)
 
         msg_id = msg_match.group(1).strip() if msg_match else None
         display_id = msg_id if msg_id else file.filename
         batch_count = int(nb_match.group(1)) if nb_match else len(parsed_data)
-        batch_total = float(sum_match.group(1)) if sum_match else sum(float(item.get('amount', 0)) for item in parsed_data)
+        
+        try:
+            batch_total = float(sum_match.group(1)) if sum_match else sum(float(item.get('amount', 0)) for item in parsed_data)
+        except (ValueError, TypeError):
+            batch_total = 0.0
 
         batch_status = "Pending"
         validation_errors = []

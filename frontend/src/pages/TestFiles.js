@@ -58,21 +58,43 @@ function TestFiles() {
       ? MOCK_IBANS[targetCountry][0] 
       : (MOCK_IBANS[country].find(iban => iban !== selectedIban) || selectedIban);
 
+    let body = '';
+    const msgId = `GEN-${Date.now()}`;
+    const timestamp = new Date().toISOString();
+
+    if (fileType.includes('pain.001')) {
+      body = `
+    <CstmrCdtTrfInitn>
+      <GrpHdr><MsgId>${msgId}</MsgId><CreDtTm>${timestamp}</CreDtTm></GrpHdr>
+      <PmtInf>
+        <DbtrAcct><Id><IBAN>${selectedIban}</IBAN></Id></DbtrAcct>
+        <CdtTrfTxInf>
+          <Amt><InstdAmt Ccy="EUR">100.00</InstdAmt></Amt>
+          <CdtrAcct><Id><IBAN>${creditorIban}</IBAN></Id></CdtrAcct>
+        </CdtTrfTxInf>
+      </PmtInf>
+    </CstmrCdtTrfInitn>`;
+    } else if (fileType.includes('camt.054')) {
+      body = `
+    <BkToCstmrDbtCdtNtfctn>
+      <GrpHdr><MsgId>${msgId}</MsgId><CreDtTm>${timestamp}</CreDtTm></GrpHdr>
+      <Ntfctn>
+        <Id>NTF-${Date.now()}</Id>
+        <Acct><Id><IBAN>${selectedIban}</IBAN></Id></Acct>
+        <Ntry>
+          <Amt Ccy="EUR">100.00</Amt>
+          <Sts>BOOK</Sts>
+          <NtryDtls><TxDtls><Refs><EndToEndId>E2E-${Date.now()}</EndToEndId></Refs></TxDtls></NtryDtls>
+        </Ntry>
+      </Ntfctn>
+    </BkToCstmrDbtCdtNtfctn>`;
+    } else {
+      // Fallback for pain.008 or others
+      body = `<RawContent>Mock ISO content for ${fileType}</RawContent>`;
+    }
+
     const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
-<Document xmlns="urn:iso:std:iso:20022:tech:xsd:${fileType}">
-  <CstmrCdtTrfInitn>
-    <GrpHdr>
-      <MsgId>GEN-${Date.now()}</MsgId>
-      <CreDtTm>${new Date().toISOString()}</CreDtTm>
-    </GrpHdr>
-    <PmtInf>
-      <DbtrAcct><Id><IBAN>${selectedIban}</IBAN></Id></DbtrAcct>
-      <CdtTrfTxInf>
-        <Amt><InstdAmt Ccy="EUR">100.00</InstdAmt></Amt>
-        <CdtrAcct><Id><IBAN>${creditorIban}</IBAN></Id></CdtrAcct>
-      </CdtTrfTxInf>
-    </PmtInf>
-  </CstmrCdtTrfInitn>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:${fileType}">${body}
 </Document>`;
 
     const blob = new Blob([xmlContent], { type: 'application/xml' });

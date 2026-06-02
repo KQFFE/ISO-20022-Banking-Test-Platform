@@ -116,6 +116,47 @@ def test_full_transaction_lifecycle():
         finally:
             db.close()
 
+def test_transaction_individual_deletion():
+    with TestClient(app) as client:
+        # 1. Setup: Create flow and transaction
+        flow_res = client.post("/flows/", json={"name": "Del Test", "direction": "Outbound", "message_format": "Pain.001"})
+        flow_id = flow_res.json()["id"]
+        
+        # Use a minimal XML string that passes basic extraction
+        xml = b'<Document><CstmrCdtTrfInitn><GrpHdr><MsgId>INDIV-DEL</MsgId></GrpHdr></CstmrCdtTrfInitn></Document>'
+        client.post(f"/transactions/upload/{flow_id}", files={"file": ("test.xml", xml, "application/xml")})
+
+        db = TestingSessionLocal()
+        try:
+            tx = db.query(Transaction).filter(Transaction.instruction_id == "INDIV-DEL").first()
+            tx_id = tx.id
+            
+            # 2. Delete individual transaction
+            del_res = client.delete(f"/transactions/{tx_id}")
+            assert del_res.status_code == 200
+            assert "deleted" in del_res.json()["detail"]
+            
+            # 3. Verify deletion
+            assert db.query(Transaction).filter(Transaction.id == tx_id).first() is None
+            
+            # 4. Test 404 for non-existent transaction
+            res_404 = client.delete(f"/transactions/{tx_id}")
+            assert res_404.status_code == 404
+        finally:
+            db.close()
+
+def test_download_path_traversal_protection():
+    with TestClient(app) as client:
+        # We use a segment containing ".." that isn't a standalone dot-segment.
+        # This bypasses router normalization but triggers our internal ".." string check.
+        bad_req = client.get("/transactions/download/traversal..test")
+        assert bad_req.status_code == 400
+        
+        # Use URL encoding for the backslash to ensure it reaches the function
+        # and triggers the leading slash/backslash guard.
+        bad_req_2 = client.get("/transactions/download/%5Cwindows%5Csystem32")
+        assert bad_req_2.status_code == 400
+
 def test_clear_all_transactions():
     with TestClient(app) as client:
         # 1. Create a flow first
@@ -171,6 +212,34 @@ def test_flow_currency_validation_persistence():
         
         # 3. Cleanup
         client.delete(f"/flows/{created_flow['id']}")
+
+def test_flow_crud_lifecycle():
+    with TestClient(app) as client:
+        # 1. Create
+        flow_res = client.post("/flows/", json={"name": "CRUD Flow", "direction": "Outbound", "message_format": "Pain.001"})
+        flow_id = flow_res.json()["id"]
+
+        # 2. Update
+        update_res = client.put(f"/flows/{flow_id}", json={
+            "name": "Updated Flow Name", 
+            "direction": "Inbound", 
+            "message_format": "camt.054",
+            "currency_validation": True,
+            "allowed_currency": "USD"
+        })
+        assert update_res.status_code == 200
+        assert update_res.json()["name"] == "Updated Flow Name"
+        assert update_res.json()["allowed_currency"] == "USD"
+
+        # 3. Delete
+        del_res = client.delete(f"/flows/{flow_id}")
+        assert del_res.status_code == 200
+        
+        # 4. Verify 404 on Update/Delete non-existent
+        res_404_upd = client.put(f"/flows/{flow_id}", json={"name": "X", "direction": "In", "message_format": "Y"})
+        assert res_404_upd.status_code == 404
+        res_404_del = client.delete(f"/flows/{flow_id}")
+        assert res_404_del.status_code == 404
 
 def test_upload_currency_validation_failure():
     today_iso = datetime.now().date().isoformat()
@@ -303,3 +372,48 @@ def test_camt_054_upload_lifecycle():
             assert "output_file" in exec_res.json()
         finally:
             db.close()
+
+def test_clear_all_transactions_physical_cleanup():
+    """
+    Verifies that generated output files are physically deleted from the
+    disk when the clear_all_transactions endpoint is called.
+    """
+    today_iso = datetime.now().date().isoformat()
+    now_iso = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+
+    xml_content = (
+        f'<?xml version="1.0" encoding="UTF-8"?>'
+        f'<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03">'
+        f'<CstmrCdtTrfInitn>'
+        f'<GrpHdr><MsgId>DISK-CLEANUP-TEST</MsgId><CreDtTm>{now_iso}</CreDtTm></GrpHdr>'
+        f'<PmtInf><PmtMtd>TRF</PmtMtd><ReqdExctnDt>{today_iso}</ReqdExctnDt>'
+        f'<DbtrAgt><FinInstnId><BIC>TESTBIC</BIC></FinInstnId></DbtrAgt>'
+        f'<DbtrAcct><Id><IBAN>SE123</IBAN></Id></DbtrAcct>'
+        f'<CdtTrfTxInf><PmtId><InstrId>TX-DISK-01</InstrId></PmtId>'
+        f'<Amt><InstdAmt Ccy="EUR">1.00</InstdAmt></Amt></CdtTrfTxInf>'
+        f'</PmtInf></CstmrCdtTrfInitn></Document>'
+    ).encode('utf-8')
+
+    with TestClient(app) as client:
+        # 1. Create flow and upload transaction
+        flow_res = client.post("/flows/", json={"name": "Cleanup Test", "direction": "Outbound", "message_format": "Pain.001"})
+        flow_id = flow_res.json()["id"]
+        client.post(f"/transactions/upload/{flow_id}", files={"file": ("test.xml", xml_content, "application/xml")})
+
+        db = TestingSessionLocal()
+        tx = db.query(Transaction).filter(Transaction.instruction_id == "DISK-CLEANUP-TEST").first()
+        tx_id = tx.id
+        db.close()
+
+        # 2. Execute to generate output file
+        exec_res = client.post(f"/transactions/{tx_id}/execute")
+        filename = exec_res.json()["output_file"]
+
+        from app.services.transaction_service import OUTPUT_DIR
+        file_path = os.path.join(OUTPUT_DIR, filename)
+        assert os.path.exists(file_path), "The generated XML file should exist on disk before cleanup."
+
+        # 3. Call clear history (DELETE /transactions/)
+        response = client.delete("/transactions/")
+        assert response.status_code == 200
+        assert not os.path.exists(file_path), "The generated XML file should have been deleted from disk."
