@@ -51,27 +51,35 @@ def create_flow(flow: FlowCreate, db: Session = Depends(get_db)):
 @router.put("/{flow_id}", response_model=FlowRead)
 def update_flow(flow_id: int, flow: FlowCreate, db: Session = Depends(get_db)):
     """Updates an existing flow definition."""
-    db_flow = db.query(Flow).filter(Flow.id == flow_id).first()
-    if not db_flow:
-        raise HTTPException(status_code=404, detail="Flow definition not found")
-    
-    update_data = flow.model_dump()
-    valid_attrs = Flow.__mapper__.attrs.keys()
-    for key, value in update_data.items():
-        if key in valid_attrs:
-            setattr(db_flow, key, value)
-    
-    db.commit()
-    db.refresh(db_flow)
-    return db_flow
+    try:
+        db_flow = db.query(Flow).filter(Flow.id == flow_id).first()
+        if not db_flow:
+            raise HTTPException(status_code=404, detail="Flow definition not found")
+        
+        update_data = flow.model_dump()
+        valid_attrs = Flow.__mapper__.attrs.keys()
+        for key, value in update_data.items():
+            if key in valid_attrs:
+                setattr(db_flow, key, value)
+        
+        db.commit()
+        db.refresh(db_flow)
+        return db_flow
+    except (SQLAlchemyError, TypeError, AttributeError) as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error during update: {str(e)}")
 
 @router.delete("/{flow_id}")
 def delete_flow(flow_id: int, db: Session = Depends(get_db)):
     """Deletes a flow definition from the database."""
-    db_flow = db.query(Flow).filter(Flow.id == flow_id).first()
-    if not db_flow:
-        raise HTTPException(status_code=404, detail="Flow definition not found")
-    
-    db.delete(db_flow)
-    db.commit()
-    return {"status": "Success", "detail": f"Flow {flow_id} deleted."}
+    try:
+        db_flow = db.query(Flow).filter(Flow.id == flow_id).first()
+        if not db_flow:
+            raise HTTPException(status_code=404, detail="Flow definition not found")
+        
+        db.delete(db_flow)
+        db.commit()
+        return {"status": "Success", "detail": f"Flow {flow_id} deleted."}
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error during deletion: {str(e)}")

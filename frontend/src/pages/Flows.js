@@ -59,6 +59,7 @@ function Flows() {
       }
       
       setEditingId(null);
+      setError('');
       setBicString('');
       setIbanString('');
       setNewFlow({
@@ -86,6 +87,7 @@ function Flows() {
 
   const handleEditInitiate = (flow) => {
     setEditingId(flow.id);
+    setError('');
     setBicString(flow.bic_codes.join(', '));
     setIbanString(flow.valid_ibans.join(', '));
     setNewFlow({
@@ -261,6 +263,7 @@ function Flows() {
                 type="button" 
                 onClick={() => {
                   setEditingId(null);
+                  setError('');
                   setBicString('');
                   setIbanString('');
                   setNewFlow({
