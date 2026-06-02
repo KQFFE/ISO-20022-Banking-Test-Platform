@@ -4,15 +4,12 @@ import { API_BASE_URL, fetchWithRetry } from '../utils/api'; // Import centraliz
 
 
 function Transactions() {
-  const [selectedFile, setSelectedFile] = useState(null);
   const [flows, setFlows] = useState([]);
-  const [selectedFlowId, setSelectedFlowId] = useState('');
   const [transactions, setTransactions] = useState([]);
   const [uploadMessage, setUploadMessage] = useState('');
   const [error, setError] = useState('');
   const [errorDetailTx, setErrorDetailTx] = useState(null);
   const modalRef = useRef(null); // Ref for the modal container
-  const fileInputRef = useRef(null); // Ref for the file input
   const prevActiveElement = useRef(null); // To store the element that had focus before modal opened
 
   const fetchTransactions = useCallback(async () => {
@@ -29,14 +26,11 @@ function Transactions() {
     try {
       const response = await fetchWithRetry(`${API_BASE_URL}/flows/`);
       setFlows(response.data);
-      if (response.data.length > 0 && !selectedFlowId) {
-        setSelectedFlowId(response.data[0].id);
-      }
     } catch (err) {
       console.error("Error fetching flows:", err);
       setError("Failed to load flow definitions.");
     }
-  }, [selectedFlowId]);
+  }, []);
 
   useEffect(() => {
     fetchFlows();
@@ -89,42 +83,6 @@ function Transactions() {
     }
   }, [errorDetailTx]); // Re-run effect when errorDetailTx changes (modal opens/closes)
 
-  const handleFileChange = (event) => {
-    setSelectedFile(event.target.files[0]);
-  };
-
-  const handleFlowChange = (event) => {
-    setSelectedFlowId(event.target.value);
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile || !selectedFlowId) {
-      setError("Please select a file and a flow.");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-
-    try {
-      setUploadMessage('Uploading...');
-      setError('');
-      const response = await axios.post(`${API_BASE_URL}/transactions/upload/${selectedFlowId}`, formData, { // Direct axios.post for file upload (retries are complex)
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setUploadMessage(`Upload successful: ${response.data.transactions_imported} transactions imported.`);
-      setSelectedFile(null); // Clear selected file
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""; // Clear the native file input UI
-      }
-      fetchTransactions();
-    } catch (err) {
-      console.error("Upload error:", err.response ? err.response.data : err.message);
-      setError(`Upload failed: ${err.response ? err.response.data.detail : err.message}`);
-      setUploadMessage('');
-    }
-  };
-
   const handleGenerateOutput = async (transactionId) => {
     try {
       setUploadMessage(`Generating output for ID: ${transactionId}...`);
@@ -162,55 +120,11 @@ function Transactions() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Transactions</h1>
+      <h1 className="text-2xl font-bold mb-4">Global Transaction History</h1>
+      <p className="text-gray-600 mb-6">Audit log of all processed messages across all flows.</p>
+      {error && <p className="text-red-500 mb-2">{error}</p>}
+      {uploadMessage && <p data-testid="upload-status-message" className="text-green-600 mb-2">{uploadMessage}</p>}
 
-      <div className="mb-6 p-4 border rounded-lg bg-white shadow-sm">
-        <h2 className="text-xl font-semibold mb-3">Upload ISO 20022 File</h2>
-        {error && <p className="text-red-500 mb-2">{error}</p>}
-        {uploadMessage && <p data-testid="upload-status-message" className="text-green-600 mb-2">{uploadMessage}</p>}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div className="flex flex-col">
-            <label htmlFor="flow-select" className="block text-sm font-medium text-gray-700 mb-1">Target Flow Configuration</label>
-            <select
-              id="flow-select"
-              data-testid="flow-select"
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-100 border-gray-500 focus:outline-none focus:ring-2 focus:ring-black focus:border-black sm:text-sm rounded-md transition-all"
-              value={selectedFlowId}
-              onChange={handleFlowChange}
-            >
-              <option value="">-- Select a Flow --</option>
-              {flows.map((flow) => (
-                <option key={flow.id} value={flow.id} data-testid="flow-option">
-                  {flow.name} ({flow.message_format})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex flex-col">
-            <label htmlFor="iso-file-upload" className="block text-sm font-medium text-gray-700 mb-1">ISO 20022 XML File</label>
-            <input 
-              id="iso-file-upload" 
-              ref={fileInputRef}
-              data-testid="iso-file-upload"
-              type="file" 
-              accept=".xml"
-              onChange={handleFileChange} 
-              className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 py-1" 
-            />
-          </div>
-        </div>
-        <button
-          onClick={handleUpload}
-          disabled={!selectedFile || !selectedFlowId}
-          data-testid="upload-button"
-          className="mt-4 px-4 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Upload and Process
-        </button>
-      </div>
-
-      <h2 className="text-xl font-semibold mb-3">Processed Transactions</h2>
       <div className="bg-white shadow-sm rounded-lg overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">

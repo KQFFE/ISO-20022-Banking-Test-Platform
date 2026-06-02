@@ -27,7 +27,15 @@ This project aims to comply with **WCAG 2.1 AA** standards:
 - **Data Layer**: `app/db/` manages SQLAlchemy models and migrations (Alembic).
 
 ### Frontend (`/frontend`)
-- **Views**: `src/pages/` (Dashboard, Transactions, Flows).
+- **Views**: `src/pages/`
+    - **Overview**: High-level system stats.
+    - **Payments**: Testing and execution of payment flows.
+    - **Transactions**: Audit history of all processed messages.
+    - **Mandates and DD**: Specific testing for mandate management.
+    - **Batches**: Grouped view of message IDs and batch totals.
+    - **Flow Definitions**: Management of BIC/IBAN validation rules.
+    - **Test Files**: Scoped generation of ISO 20022 XML files.
+    - **Market Rules**: Documentation of field-level requirements.
 - **Stability**: `e2e/` contains Playwright end-to-end tests targeting `data-testid` attributes.
 
 ## Getting Started
