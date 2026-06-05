@@ -31,12 +31,12 @@ function Batches() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message ID</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Reference (MsgId)</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ISO Scheme</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch Sum</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rec. Status</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Imported</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -44,10 +44,10 @@ function Batches() {
               <tr key={batch.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-blue-600">{batch.instruction_id}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {batch.raw_data?.message_type || 'pain.001'}
+                  <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">{batch.raw_data?.message_type || 'pain.001.001.03'}</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {batch.raw_data?.batch_count || 1}
+                  {batch.raw_data?.batch_count || 1} records
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {(batch.raw_data?.batch_total || batch.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })} {batch.currency}
@@ -61,7 +61,7 @@ function Batches() {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date().toLocaleDateString()}
+                  {new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                 </td>
               </tr>
             ))}
