@@ -1,8 +1,12 @@
 # ISO 20022 Banking Test Platform
 
-A test application for viewing, handling, and executing financial flows (Payments, Statements, Mandates) following the ISO 20022 standard.
+This application serves as a comprehensive test platform for interacting with and managing financial messages based on the ISO 20022 standard. It provides tools for viewing, validating, processing, and generating various financial message types, primarily focusing on payments and statements. The core scope includes simulating real-world financial message workflows, enabling developers and financial professionals to test integrations, validate message structures, and understand the lifecycle of ISO 20022 transactions in a controlled environment.
 
 ## Project Structure
+
+The project is organized into two main components:
+- **Backend**: A FastAPI application handling API requests, business logic, database interactions, and ISO 20022 message processing.
+- **Frontend**: A React application providing a user interface for interacting with the backend, uploading files, viewing transactions, and managing flow definitions.
 
 ## Key Features
 - **ISO 20022 Parsing**: Support for `pain.001` (Customer Credit Transfer Initiation) and `camt.054` (Bank-to-Customer Debit/Credit Notification).
@@ -55,9 +59,10 @@ npm install
 cd backend
 
 # Activate virtual environment
-Windows: .\backend\venv\Scripts\activate
-macOS/Linux: source backend/venv/bin/activate
+# Windows: .\venv\Scripts\activate
+# macOS/Linux: source venv/bin/activate
 
+# Once activated, apply database migrations
 alembic upgrade head
 ```
 
