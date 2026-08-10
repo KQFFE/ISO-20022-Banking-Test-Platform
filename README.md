@@ -59,7 +59,7 @@ npm install
 cd backend
 
 # Activate virtual environment
-# Windows: .\venv\Scripts\activate
+Windows: .\venv\Scripts\activate
 # macOS/Linux: source venv/bin/activate
 
 # Once activated, apply database migrations
