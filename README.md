@@ -55,12 +55,9 @@ The project is designed to be setup from the root directory with a single comman
 # 1. Install all dependencies (Backend venv + Frontend packages)
 npm install
 
-# 2. Apply database migrations
-cd backend
-
-# If the venv does not exist yet, create it first:
+# Or install backend dependencies manually on a fresh machine:
+# cd backend
 # python -m venv venv
-
 # Activate virtual environment
 # PowerShell: .\venv\Scripts\Activate.ps1
 # Command Prompt: .\venv\Scripts\activate.bat
@@ -69,8 +66,12 @@ cd backend
 # Then activate again: .\venv\Scripts\Activate.ps1
 # macOS/Linux: source venv/bin/activate
 
-# Once activated, apply database migrations
-alembic upgrade head
+# 2. Install Python packages into the venv (required on first-time setup)
+python -m pip install -r requirements.txt
+
+# 3. Apply database migrations
+# On Windows, use python -m alembic for the most reliable invocation
+python -m alembic upgrade head
 ```
 
 ### 3. Running the App
