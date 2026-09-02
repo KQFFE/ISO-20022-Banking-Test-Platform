@@ -49,13 +49,14 @@ This project aims to comply with **WCAG 2.1 AA** standards:
 - Node.js & npm
 
 ### 2. Setup
-The project is designed to be setup from the root directory with a single command:
+The project is designed to be set up from the root directory with a single command:
 
 ```bash
 # 1. Install all dependencies (Backend venv + Frontend packages)
 npm install
 
-# Or install backend dependencies manually on a fresh machine:
+# If you are setting up a fresh machine manually, do the steps below instead:
+# Backend setup
 # cd backend
 # python -m venv venv
 # Activate virtual environment
@@ -65,11 +66,12 @@ npm install
 # Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 # Then activate again: .\venv\Scripts\Activate.ps1
 # macOS/Linux: source venv/bin/activate
+# python -m pip install -r requirements.txt
 
-# 2. Install Python packages into the venv (required on first-time setup)
-python -m pip install -r requirements.txt
+# Frontend setup (run in a normal terminal, not inside the backend venv)
+# npm install --prefix frontend
 
-# 3. Apply database migrations
+# 2. Apply database migrations from the activated backend venv
 # On Windows, use python -m alembic for the most reliable invocation
 python -m alembic upgrade head
 ```
@@ -77,8 +79,8 @@ python -m alembic upgrade head
 ### 3. Running the App
 Start the tiers in separate terminal windows from the project root:
 
-**Terminal 1 (Backend):** `npm run backend`  
-**Terminal 2 (Frontend):** `npm run frontend`
+**Terminal 1 (Backend):** activate the backend venv, then run `npm run backend`  
+**Terminal 2 (Frontend):** use a normal shell, then run `npm run frontend`
 
 ## Testing & Quality
 
@@ -111,7 +113,8 @@ npm run test:frontend
 ```
 
 ### Troubleshooting
-- **Database Migrations**: If `alembic upgrade head` fails with a naming convention error, ensure the migration script explicitly names constraints for SQLite batch mode.
+- **Database Migrations**: If `python -m alembic upgrade head` fails with a naming convention error, ensure the migration script explicitly names constraints for SQLite batch mode.
+- **Frontend won't start / `react-scripts` not recognized**: run `npm install --prefix frontend` in a normal terminal. This error means the frontend dependencies have not been installed yet; the backend venv state does not affect the frontend.
 - **Python Imports (Yellow/Red Squiggles)**: 
     1. In VS Code, run `Python: Select Interpreter` and point to `backend/venv/Scripts/python.exe`.
     2. If issues persist, ensure the `backend` directory is added to your IDE's "Source Roots" or `python.analysis.extraPaths`.
