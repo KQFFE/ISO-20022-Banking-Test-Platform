@@ -58,8 +58,15 @@ npm install
 # 2. Apply database migrations
 cd backend
 
+# If the venv does not exist yet, create it first:
+# python -m venv venv
+
 # Activate virtual environment
-Windows: .\venv\Scripts\activate
+# PowerShell: .\venv\Scripts\Activate.ps1
+# Command Prompt: .\venv\Scripts\activate.bat
+# If PowerShell blocks script execution, run:
+# Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+# Then activate again: .\venv\Scripts\Activate.ps1
 # macOS/Linux: source venv/bin/activate
 
 # Once activated, apply database migrations
