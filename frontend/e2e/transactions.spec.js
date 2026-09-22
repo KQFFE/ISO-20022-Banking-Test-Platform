@@ -98,7 +98,21 @@ test.describe('Transaction Lifecycle', () => {
     
     await page.goto('/transactions');
 
-    // 6. Verify the duplicate validation row exists and is marked as "Validation Failed"
+    // 6. Wait until the backend has persisted the duplicate validation and the UI has re-rendered it.
+    await expect.poll(async () => {
+      const rows = await page.locator('tbody tr').filter({ hasText: duplicateMessageId }).all();
+      for (const row of rows) {
+        const text = await row.textContent();
+        if (text && /Validation Failed/i.test(text)) {
+          return true;
+        }
+      }
+      return false;
+    }, {
+      timeout: 20000,
+      intervals: [250, 500, 1000, 2000],
+    }).toBeTruthy();
+
     const duplicateErrorRow = page.locator('tbody tr')
       .filter({ has: page.getByTestId('status-badge-error') })
       .filter({ hasText: duplicateMessageId })
