@@ -9,23 +9,26 @@ on:
 jobs:
   test:
     name: test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      PYTHONPATH: ${{ github.workspace }}/backend
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
 
       - name: Install root dependencies
         run: npm ci
@@ -34,7 +37,10 @@ jobs:
         run: |
           python -m venv backend/venv
           backend/venv/bin/python -m pip install --upgrade pip
-          backend/venv/bin/pip install -r backend/requirements.txt
+          backend/venv/bin/python -m pip install -r backend/requirements.txt
+
+      - name: Install frontend dependencies
+        run: npm install --prefix frontend
 
       - name: Start backend API
         run: |
@@ -42,12 +48,13 @@ jobs:
           sleep 10
         working-directory: backend
 
+      - name: Run backend tests
+        run: venv/bin/python -m pytest -q
+        working-directory: backend
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
         working-directory: frontend
-
-      - name: Run backend tests
-        run: npm run test:backend
 
       - name: Run frontend tests
         run: npm run test:frontend

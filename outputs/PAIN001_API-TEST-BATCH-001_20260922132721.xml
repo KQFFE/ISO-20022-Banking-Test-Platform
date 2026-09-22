@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03">
+    <CstmrCdtTrfInitn>
+        <GrpHdr>
+            <MsgId>EXEC-API-TEST-BATCH-001</MsgId>
+            <CreDtTm>2026-09-22T13:27:21</CreDtTm>
+            <NbOfTxs>1</NbOfTxs>
+            <CtrlSum>99.99</CtrlSum>
+            <InitgPty><Nm>Generated Test Platform</Nm></InitgPty>
+        </GrpHdr>
+        <PmtInf>
+            <PmtInfId>PMT-API-TEST-001</PmtInfId>
+            <PmtMtd>TRF</PmtMtd>
+            <ReqdExctnDt>2026-09-22</ReqdExctnDt>
+            <DbtrAcct><Id><IBAN>DE12345</IBAN></Id></DbtrAcct>
+            <CdtTrfTxInf>
+                <PmtId><EndToEndId>API-TEST-001</EndToEndId></PmtId>
+                <Amt><InstdAmt Ccy="EUR">99.99</InstdAmt></Amt>
+                <Cdtr><Nm>Creditor Name</Nm></Cdtr>
+                <CdtrAcct><Id><IBAN>GB29NWBK60161331926819</IBAN></Id></CdtrAcct>
+            </CdtTrfTxInf>
+        </PmtInf>
+    </CstmrCdtTrfInitn>
+</Document>

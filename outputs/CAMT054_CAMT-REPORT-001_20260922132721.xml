@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.054.001.02">
+    <BkToCstmrDbtCdtNtfctn>
+        <GrpHdr>
+            <MsgId>NOTIF-CAMT-REPORT-001</MsgId>
+            <CreDtTm>2026-09-22T13:27:21</CreDtTm>
+        </GrpHdr>
+        <Ntfctn>
+            <Id>NTF-1</Id>
+            <CreDtTm>2026-09-22T13:27:21</CreDtTm>
+            <TxsSummry>
+                <TtlNtries>
+                    <NbOfNtries>1</NbOfNtries>
+                    <Sum>50.00</Sum>
+                    <CdtDbtInd>CRDT</CdtDbtInd>
+                </TtlNtries>
+            </TxsSummry>
+            <Ntry>
+                <NtryRef>N/A</NtryRef>
+                <Amt Ccy="EUR">50.00</Amt>
+                <CdtDbtInd>CRDT</CdtDbtInd>
+                <Sts>BOOK</Sts>
+                <BookgDt><Dt>2026-09-22</Dt></BookgDt>
+                <ValDt><Dt>2026-09-22</Dt></ValDt>
+                <AcctSvcrRef>None</AcctSvcrRef>
+                <BkTxCd>
+                    <Domn>
+                        <Cd>None</Cd>
+                        <Fmly>
+                            <Cd>None</Cd>
+                            <SubFmlyCd>None</SubFmlyCd>
+                        </Fmly>
+                    </Domn>
+                </BkTxCd>
+                <NtryDtls>
+                    <TxDtls>
+                        <Refs>
+                            <EndToEndId>REF-123</EndToEndId>
+                        </Refs>
+                        <RltdPties>
+                            <Dbtr>
+                                <Nm>John Doe</Nm>
+                                <PstlAdr>
+                                    <Ctry>SE</Ctry>
+                                    <AdrLine>Street 1</AdrLine>
+                                </PstlAdr>
+                            </Dbtr>
+                        </RltdPties>
+                        <RmtInf>
+                            <Ustrd>Invoice 1</Ustrd>
+                            <Strd>
+                                <CdtrRefInf>
+                                    <Ref>REF-999</Ref>
+                                </CdtrRefInf>
+                            </Strd>
+                        </RmtInf>
+                        <RltdDts>
+                            <AccptncDtTm>2024-01-01T12:00:00</AccptncDtTm>
+                        </RltdDts>
+                    </TxDtls>
+                </NtryDtls>
+            </Ntry>
+        </Ntfctn>
+    </BkToCstmrDbtCdtNtfctn>
+</Document>
