@@ -52,35 +52,79 @@ This project aims to comply with **WCAG 2.1 AA** standards:
 The project is designed to be set up from the root directory with a single command:
 
 ```bash
-# 1. Install all dependencies (Backend venv + Frontend packages)
+# 1. Install all dependencies (backend venv + frontend packages)
 npm install
+```
 
-# If you are setting up a fresh machine manually, do the steps below instead:
+If you are setting up a fresh machine manually, use the following explicit steps instead:
+
+```bash
 # Backend setup
-# cd backend
-# python -m venv venv
-# Activate virtual environment
-# PowerShell: .\venv\Scripts\Activate.ps1
-# Command Prompt: .\venv\Scripts\activate.bat
-# If PowerShell blocks script execution, run:
-# Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-# Then activate again: .\venv\Scripts\Activate.ps1
-# macOS/Linux: source venv/bin/activate
-# python -m pip install -r requirements.txt
+cd backend
+python -m venv venv
 
-# Frontend setup (run in a normal terminal, not inside the backend venv)
-# npm install --prefix frontend
+# Activate the backend virtual environment
+# Windows PowerShell:
+.\venv\Scripts\Activate.ps1
+# Windows Command Prompt:
+# .\venv\Scripts\activate.bat
+# macOS/Linux:
+# source venv/bin/activate
 
-# 2. Apply database migrations from the activated backend venv
-# On Windows, use python -m alembic for the most reliable invocation
+# Install backend requirements
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+
+# Frontend setup (run in a normal shell, not inside the backend venv)
+cd ..
+npm install --prefix frontend
+
+# Apply database migrations from the activated backend venv
 python -m alembic upgrade head
 ```
+
+> Important: the venv is created under `backend/venv`, not at the repository root. The correct activation path is `cd backend` followed by `./venv/Scripts/Activate.ps1` on Windows or `source venv/bin/activate` on macOS/Linux.
 
 ### 3. Running the App
 Start the tiers in separate terminal windows from the project root:
 
-**Terminal 1 (Backend):** activate the backend venv, then run `npm run backend`  
-**Terminal 2 (Frontend):** use a normal shell, then run `npm run frontend`
+**Terminal 1 (Backend):** activate the backend venv and run `npm run backend`  
+**Terminal 2 (Frontend):** use a normal shell and run `npm run frontend`
+
+### GitHub Actions / CI on Commit
+Every push to `main` and every pull request triggers the workflow in `.github/workflows/ci.yml`.
+
+The CI job does the following:
+
+1. installs the Node dependencies
+2. creates a Python virtual environment under `backend/venv`
+3. installs the backend Python requirements
+4. starts the FastAPI backend on `http://localhost:8000`
+5. runs the backend `pytest` suite
+6. installs the Playwright browser dependencies
+7. runs the frontend Playwright suite
+
+If any of these steps fail, the GitHub Actions job fails and the commit is marked as not passing the required `test` status check.
+
+This is how GitHub prevents a broken commit from being merged when branch protection or a ruleset requires the status check to pass.
+
+#### Why a commit may not build in GitHub Actions
+A common cause is that the repository originally contained Windows-specific shell commands in the root install scripts, while GitHub Actions runs on Linux. For example, commands such as `if not exist ...` and `venv\Scripts\...` work in Windows `cmd`, but fail under the Linux `sh` shell used by GitHub runners.
+
+This is why the fix was to avoid the Windows-only script path in CI and to install backend dependencies explicitly in the workflow instead of relying on a shell-specific postinstall script.
+
+#### How to fix that issue
+Use CI-safe commands such as:
+
+```bash
+python -m venv backend/venv
+backend/venv/bin/python -m pip install -r backend/requirements.txt
+npm ci --ignore-scripts
+npm install --prefix frontend
+```
+
+Then run the tests in the same environment that matches the project structure. If you use a branch protection rule or ruleset in GitHub, make the required status check `test` and require it before merge.
+
 
 ## Testing & Quality
 

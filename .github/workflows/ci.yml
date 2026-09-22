@@ -57,4 +57,5 @@ jobs:
         working-directory: frontend
 
       - name: Run frontend tests
-        run: npm run test:frontend
+        run: npx playwright test --workers 1 --retries=0 --reporter=line
+        working-directory: frontend

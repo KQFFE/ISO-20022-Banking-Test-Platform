@@ -4,9 +4,10 @@ module.exports = defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: 0,
+  timeout: 15000,
   workers: 1,
-  reporter: 'html',
+  reporter: process.env.CI ? [['list']] : 'html',
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
