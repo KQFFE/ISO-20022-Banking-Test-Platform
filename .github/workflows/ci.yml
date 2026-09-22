@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Create backend virtual environment and install Python deps
+        run: |
+          python -m venv backend/venv
+          backend/venv/bin/python -m pip install --upgrade pip
+          backend/venv/bin/pip install -r backend/requirements.txt
+
+      - name: Start backend API
+        run: |
+          nohup backend/venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > /tmp/ikano_backend.log 2>&1 &
+          sleep 10
+        working-directory: backend
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+
+      - name: Run backend tests
+        run: npm run test:backend
+
+      - name: Run frontend tests
+        run: npm run test:frontend
