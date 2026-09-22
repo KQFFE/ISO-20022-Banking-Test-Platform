@@ -218,6 +218,9 @@ function Flows() {
                 />
                 Currency Validation
               </label>
+              <label htmlFor="allowed-currency" className="block text-sm font-medium text-gray-700 mb-1">
+                Allowed Currency
+              </label>
               <select 
                 id="allowed-currency"
                 className={`w-full border p-2 rounded text-sm ${!newFlow.currency_validation ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-white text-gray-900'}`}
