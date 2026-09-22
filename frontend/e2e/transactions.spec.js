@@ -2,6 +2,7 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('Transaction Lifecycle', () => {
   const testFlowName = '[TEST] E2E Flow ' + Date.now();
+  const duplicateMessageId = 'PW-MSG-100';
   const today = new Date().toISOString().split('T')[0];
   const validXml = `<?xml version="1.0" encoding="UTF-8"?>
     <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.03">
@@ -97,9 +98,13 @@ test.describe('Transaction Lifecycle', () => {
     
     await page.goto('/transactions');
 
-    // 6. Verify row exists and status is "Validation Failed"
-    const lastRow = page.locator('tbody tr').last();
-    const statusBtn = lastRow.getByTestId('status-badge-error');
+    // 6. Verify the duplicate validation row exists and is marked as "Validation Failed"
+    const duplicateErrorRow = page.locator('tbody tr')
+      .filter({ has: page.getByTestId('status-badge-error') })
+      .filter({ hasText: duplicateMessageId })
+      .first();
+    const statusBtn = duplicateErrorRow.getByTestId('status-badge-error');
+    await expect(duplicateErrorRow).toBeVisible();
     await expect(statusBtn).toHaveText('Validation Failed');
 
     // 7. Check the accessibility-compliant modal
