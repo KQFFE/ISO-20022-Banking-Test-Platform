@@ -10,7 +10,7 @@ The project is organized into two main components:
 
 ## Key Features
 - **ISO 20022 Parsing**: Support for `pain.001` (Customer Credit Transfer Initiation) and `camt.054` (Bank-to-Customer Debit/Credit Notification).
-- **Batch Processing**: Automatically groups multiple payment instructions within a single file under a unique Message ID (MsgId).
+- **Batch Processing**: Automatically groups multiple payment instructions within a single file under a unique Message ID (the MsgId field).
 - **Smart Summaries**: Calculates total batch amounts and transaction counts during upload for easy reconciliation.
 - **Validation**: Built-in BIC, IBAN, and date window validation (30-day back/future checks).
 - **Output Generation**: Generates compliant multi-entry CAMT.054 XML files based on processed batch data.
