@@ -44,13 +44,16 @@ jobs:
 
       - name: Start backend API
         run: |
-          nohup backend/venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > /tmp/ikano_backend.log 2>&1 &
+          nohup venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > /tmp/ikano_backend.log 2>&1 &
           sleep 10
         working-directory: backend
 
       - name: Run backend tests
         run: venv/bin/python -m pytest -q
         working-directory: backend
+
+      - name: Check backend is responding
+        run: curl --retry 20 --retry-delay 1 --retry-connrefused http://localhost:8000/
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
