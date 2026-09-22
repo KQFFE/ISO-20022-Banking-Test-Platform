@@ -39,6 +39,10 @@ jobs:
           backend/venv/bin/python -m pip install --upgrade pip
           backend/venv/bin/python -m pip install -r backend/requirements.txt
 
+      - name: Apply backend database migrations
+        run: venv/bin/python -m alembic upgrade head
+        working-directory: backend
+
       - name: Install frontend dependencies
         run: npm install --prefix frontend
 
