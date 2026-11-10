@@ -152,6 +152,20 @@ Then run the tests in the same environment that matches the project structure. I
 ### Automated Testing
 We use `pytest` for the backend and `Playwright` for frontend E2E.
 
+### Synthetic ISO 20022 Test Data
+
+The backend includes a deterministic generator for test-only German `pain.001.001.03` files. It uses no external services or customer data and creates synthetic payer/merchant labels, EUR amounts, future execution dates, and checksum-valid German IBANs. Synthetic BICs are paired with the bank-code portion of the generated debtor IBAN.
+
+Generate a file from the `backend` directory:
+
+```bash
+python -m app.services.synthetic_data --count 25 --seed 42 --output outputs/synthetic-pain001.xml
+```
+
+The count must be between 1 and 500. Reusing the seed on the same day reproduces the payment data. The generator validates IBAN checksums and routing-pair consistency, not account ownership, registered BIC status, every ISO 20022 business rule, or full XSD conformance. The resulting file is for local testing only and must not be sent to a bank or payment network.
+
+Run its focused tests from the `backend` directory with `pytest tests/test_synthetic_data.py`.
+
 #### Backend Tests (Pytest)
 - **Logic Tests**: `backend/tests/test_iso_logic.py`
 - **API Integration**: `backend/tests/test_api.py`
