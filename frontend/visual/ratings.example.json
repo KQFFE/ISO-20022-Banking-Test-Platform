@@ -1,0 +1,10 @@
+[
+  {
+    "caseId": "missing-action",
+    "detected": true,
+    "correct": true,
+    "actionable": true,
+    "falseClaim": false,
+    "notes": "Example only: replace with a human review of the actual diagnostic."
+  }
+]

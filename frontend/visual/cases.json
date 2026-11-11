@@ -1,0 +1,7 @@
+[
+  { "id": "unchanged", "changed": false },
+  { "id": "missing-action", "changed": true },
+  { "id": "wrong-label", "changed": true },
+  { "id": "shifted-card", "changed": true },
+  { "id": "wrong-value", "changed": true }
+]

@@ -11,12 +11,18 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
-    "@playwright/test": "^1.40.0"
+    "@playwright/test": "^1.40.0",
+    "pixelmatch": "^5.3.0",
+    "pngjs": "^7.0.0",
+    "postcss": "^8.5.32",
+    "tailwindcss": "^3.4.19"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:visual": "playwright test --config visual/playwright.config.js",
+    "test:visual:tools": "node --test visual/tools.test.js",
     "eject": "react-scripts eject"
   },
   "browserslist": {

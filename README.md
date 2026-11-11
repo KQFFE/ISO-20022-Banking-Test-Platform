@@ -13,16 +13,16 @@ The project is organized into two main components:
 - **Batch Processing**: Automatically groups multiple payment instructions within a single file under a unique Message ID (the MsgId field).
 - **Smart Summaries**: Calculates total batch amounts and transaction counts during upload for easy reconciliation.
 - **Validation**: Built-in BIC, IBAN, and date window validation (30-day back/future checks).
-- **Output Generation**: Generates compliant multi-entry CAMT.054 XML files based on processed batch data.
+- **Output Generation**: Generates multi-entry CAMT.054 XML files based on processed batch data.
 
-## Accessibility Standards
-This project aims to comply with **WCAG 2.1 AA** standards:
+## Accessibility
+The project uses WCAG 2.1 AA as a design goal, not a claim of conformance:
 - **Perceivable**: Text alternatives for non-text content and high color contrast (min 4.5:1).
 - **Operable**: Full keyboard navigability and clear focus indicators.
 - **Understandable**: Consistent navigation and input assistance (labels/error messages).
 - **Robust**: Use of semantic HTML and ARIA landmarks where necessary.
 
-### Automated Accessibility Compliance Testing
+### Automated Accessibility Testing
 The frontend CI pipeline includes an automated accessibility gate using `@axe-core/playwright`.
 
 This runs against key pages in the app and checks for common WCAG 2.1 AA violations, including:
@@ -33,7 +33,7 @@ This runs against key pages in the app and checks for common WCAG 2.1 AA violati
 
 The accessibility suite is in `frontend/e2e/accessibility.spec.js` and is included in the GitHub Actions flow before the rest of the frontend suite completes. If axe reports violations, the build fails and the commit is blocked by the required `test` status check.
 
-This is a real CI validation layer for accessibility, not just manual review.
+This is a CI validation layer, not a substitute for manual accessibility testing or an assessment of WCAG conformance.
 
 ## Project Architecture
 
@@ -203,6 +203,47 @@ npm run test:frontend
 If you have not run the frontend installation after pulling in the new axe dependency, the project will not have the accessibility package available in CI or locally.
 
 The accessibility spec is intentionally separate so the repo can distinguish between functional regression failures and accessibility violations. This makes it easier to debug and fix both categories independently while still blocking broken code in CI.
+
+### Visual regression benchmark and optional AI diagnostics
+
+The separate Playwright visual suite renders the **real Overview page** at a fixed desktop viewport with fixed, synthetic statistics. It intercepts the statistics API and blocks other external requests; it does not use a backend database. For offline styling, the Tailwind utilities used by the React source are compiled locally instead of loading the application's Tailwind CDN script. This is an approximation of the CDN's default styling, so CDN changes and external assets are not tested. No production or customer data should be used.
+
+The test compares the page with a platform-specific screenshot, then injects four controlled changes: a missing action, an incorrect label, a shifted card, and an incorrect value. An unchanged control measures false positives. `results.json` reports changed pixels and true/false positives and negatives using a 0.00005 changed-pixel ratio cutoff. These five cases are a small calibration exercise, not evidence of real-world detection accuracy. The test fails if the baseline differs beyond the threshold, a seeded change is missed, or the unchanged control is detected. Screenshot comparison and this benchmark do not replace functional or axe accessibility tests.
+
+From `frontend`, with dependencies and Playwright Chromium installed:
+
+```bash
+npm run test:visual:tools
+npm run test:visual
+```
+
+The included Windows screenshot in `frontend/visual/benchmark.spec.js-snapshots/` is a **candidate, not an approved baseline**. Review it against the intended UI and synthetic fixture before accepting it in version control. Other operating systems require their own baseline; screenshots also depend on browser version, fonts, and rendering environment. When a baseline is absent, or an intentional UI change needs a new candidate, generate it explicitly:
+
+```bash
+npx playwright test --config visual/playwright.config.js --update-snapshots
+```
+
+This command overwrites that platform's baseline; inspect the resulting image and diff before accepting it. Never approve a baseline merely because a test or model suggests it. Keep reviewed baseline files under version control. Run without `--update-snapshots` for actual comparisons. The visual suite is intentionally outside ordinary CI and the existing accessibility suite; it is not a CI gate until a reproducible runner and its reviewed baseline are established.
+
+After a run, `frontend/test-results/visual-benchmark/` contains the reference, the current UI, benchmark images, diffs, and `results.json`. A baseline mismatch still writes `actual-ui.png` and its manifest before failing, so it can be inspected. These files are local, ignored artifacts and can be overwritten by later runs.
+
+#### Optional OpenAI diagnostic
+
+No live model is called by the visual suite or ordinary CI. To use the optional diagnostic later, create an OpenAI API account and supply an API key with billing or available credits; a ChatGPT subscription does not necessarily include API usage. Image uploads may incur costs and are subject to the provider's data policies. Review **both** `baseline.png` and the selected case image in the latest output directory for synthetic, sanitized content before every upload. The checksums only detect changes after capture; they do not prove that content is safe. Do not use the command with real payment or customer data.
+
+Set `OPENAI_API_KEY` in your environment without committing it, then explicitly confirm review (PowerShell example, from `frontend`):
+
+```powershell
+$env:OPENAI_API_KEY = ([System.Net.NetworkCredential]::new('', (Read-Host "OpenAI API key" -AsSecureString))).Password
+node visual/diagnose.js actual-ui --confirm-reviewed-synthetic
+# Or analyze a seeded case, e.g.:
+node visual/diagnose.js missing-action --confirm-reviewed-synthetic
+Remove-Item Env:OPENAI_API_KEY
+```
+
+The command defaults to `gpt-4o`; optionally set `OPENAI_VISION_MODEL` to an available vision-capable model. It sends only the selected reference and current image, not the benchmark ground truth, to OpenAI. It writes a local `<case>-diagnostic.json`. API, authentication, rate-limit, and malformed-response errors are reported rather than treated as success. The result is advisory only: it never changes selectors, approves baselines, or changes the Playwright result. Models can miss differences, hallucinate, and vary across runs.
+
+For diagnostic usefulness, independently review each model output against the known seeded change (and the unchanged control). Copy `frontend/visual/ratings.example.json` to a local, untracked location and add one entry per case: `detected` records whether the model reported any visual change; `correct` means it identifies the actual change or correctly says none; `actionable` means it gives a useful location and description; `falseClaim` flags any invented difference; `notes` records the rationale. Then run `node visual/score.js <ratings.json>` from `frontend`. It compares `detected` with the controlled ground truth and reports true/false positives and negatives alongside the usefulness counts. Score only the controlled cases, not `actual-ui`, whose ground truth is unknown. The example is illustrative, not a measured result. Repeat runs and broaden cases before drawing conclusions.
 
 ### Troubleshooting
 - **Database Migrations**: If `python -m alembic upgrade head` fails with a naming convention error, ensure the migration script explicitly names constraints for SQLite batch mode.
