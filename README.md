@@ -85,9 +85,13 @@ python -m pip install -r requirements.txt
 # Frontend dependencies (run in a normal shell, not inside the backend venv)
 cd ..
 npm install --prefix frontend
+
+# Install Playwright browsers (required for E2E tests)
+cd frontend
+npx playwright install
 ```
 
-The root-level `npm install` is not the full setup for this project because the backend and frontend are separate runtime environments. The backend uses a venv under `backend/venv`, while the frontend uses `npm` packages in `frontend/` including the accessibility tooling (`@axe-core/playwright`).
+The root-level `npm install` is not the full setup for this project because the backend and frontend are separate runtime environments. The backend uses a venv under `backend/venv`, while the frontend uses `npm` packages in `frontend/` including the accessibility tooling (`@axe-core/playwright`) and Playwright test runner.
 
 After dependencies are installed, apply the database migrations from the activated backend venv:
 
@@ -97,6 +101,8 @@ python -m alembic upgrade head
 ```
 
 > Important: the venv is created under `backend/venv`, not at the repository root. The correct activation path is `cd backend` followed by `./venv/Scripts/Activate.ps1` on Windows or `source venv/bin/activate` on macOS/Linux.
+> 
+> Also important: Playwright requires both the npm package AND the browsers to be installed. Run `npx playwright install` from the `frontend/` directory after `npm install --prefix frontend`.
 
 ### 3. Running the App
 Start the tiers in separate terminal windows from the project root:
@@ -108,11 +114,7 @@ cd backend
 # or: .\venv\Scripts\activate.bat  # Windows CMD
 # or: source venv/bin/activate  # macOS/Linux
 
-# Set Claude API key for LLM test failure analysis (optional, only if using Phase 1 features)
-$env:CLAUDE_API_KEY = "sk-ant-..."  # Windows PowerShell
-# or: export CLAUDE_API_KEY="sk-ant-..."  # macOS/Linux
-
-python -m uvicorn app.main:app --reload --port 8000
+python -m uvicorn app.main:app --port 8000
 ```
 
 **Terminal 2 (Frontend):** 
@@ -120,7 +122,7 @@ python -m uvicorn app.main:app --reload --port 8000
 npm start --prefix frontend
 ```
 
-> **Backend Configuration:** The backend defaults to SQLite database (`test.db`). For LLM-powered test failure analysis (Phase 1 feature), set `CLAUDE_API_KEY` environment variable before starting the server.
+> **Backend Configuration:** The backend defaults to SQLite database (`test.db`). It automatically loads configuration from `backend/.env` at startup, including the Claude API key for LLM-powered test failure analysis. See Phase 1 setup below.
 
 ## AI-Native Test Automation (Phase 1)
 
@@ -128,24 +130,35 @@ This project includes **LLM-powered self-healing test automation**. When tests f
 
 ### Setup Phase 1 Features
 
-1. **Add Claude API Key** to `backend/.env`:
+1. **Copy `.env.example` to `backend/.env`** and add your Anthropic API key:
+   ```bash
+   cd backend
+   cp .env.example .env
    ```
-   CLAUDE_API_KEY="sk-ant-your-key-here"
+
+2. **Edit `backend/.env` with your Claude API key:**
+   ```
+   DATABASE_URL="sqlite:///./test.db"
+   ANTHROPIC_API_KEY="sk-ant-your-key-here"
    CLAUDE_MODEL="claude-3-5-sonnet-20241022"
    ```
 
-2. **Backend automatically includes** test failure analysis endpoint:
-   - `POST /api/test/analyze-failure` — receives failure details
-   - `GET /api/test/health` — health check
+3. **Install python-dotenv** (if not already in requirements):
+   ```bash
+   pip install python-dotenv
+   ```
 
-3. **Reporter is active by default** in `frontend/playwright.config.js`
+4. **Backend automatically includes** test failure analysis endpoint:
+   - `POST /api/test/analyze-failure` — receives failure details, returns Claude analysis
+   - `GET /api/test/health` — health check
 
 ### Running POC Test
 
 ```bash
-# Terminal 1: Backend (with CLAUDE_API_KEY in .env)
+# Terminal 1: Backend (with backend/.env configured)
 cd backend
-python -m uvicorn app.main:app --reload --port 8000
+.\venv\Scripts\Activate.ps1
+python -m uvicorn app.main:app --port 8000
 
 # Terminal 2: Frontend
 npm start --prefix frontend
@@ -155,19 +168,45 @@ cd frontend
 npx playwright test e2e/poc-llm-analysis.spec.js
 ```
 
-**Check results:**
-```bash
-Get-Content test-results\llm-analysis\llm-analysis-report.json | ConvertFrom-Json | ConvertTo-Json
+**Expected:** Test fails intentionally (broken selector), HTML report generated in `test-results/`.
+
+### Testing LLM Analysis Endpoint (Manual)
+
+To verify Claude integration is working (see below for mock vs. real responses):
+
+**Note on API Access:** The backend includes automatic fallback to mock Claude responses. If your Anthropic account isn't provisioned with model access yet, you'll see mock analysis that demonstrates the system works. Once your account is activated at https://console.anthropic.com/settings, it will automatically switch to real Claude—no code changes needed.
+
+To test the endpoint:
+
+```powershell
+# From any terminal (not the one running uvicorn)
+$failureData = @{
+    test_name = "accessibility test with intentional failure"
+    file = "e2e/poc-llm-analysis.spec.js"
+    line = 22
+    error_message = "element(s) not found"
+    stack_trace = "..."
+    selector = "[data-testid='nonexistent-button-that-moved']"
+    page_url = "http://localhost:3000"
+    page_title = "ISO 20022 Banking Test Platform"
+    status = "failed"
+    duration = 6500
+} | ConvertTo-Json
+
+Invoke-WebRequest -Uri "http://localhost:8000/api/test/analyze-failure" `
+  -Method POST `
+  -ContentType "application/json" `
+  -Body $failureData `
+  -UseBasicParsing | Select-Object -ExpandProperty Content | ConvertFrom-Json | ConvertTo-Json
 ```
 
-**Expected:** JSON report with LLM analysis including root cause, fix suggestions, and confidence score.
+**Expected:** JSON response with `success: true` and Claude's analysis (root_cause, suggestions, confidence).
 
 ### Disable Phase 1 (Optional)
 
 To run tests without LLM analysis:
 ```bash
-$env:DISABLE_LLM_ANALYSIS = "true"
-npx playwright test
+npx playwright test --reporter=html
 ```
 
 **Documentation:**

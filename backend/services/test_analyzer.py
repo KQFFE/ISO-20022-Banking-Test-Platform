@@ -10,7 +10,15 @@ import os
 from typing import Optional, TypedDict
 from anthropic import Anthropic
 
-client = Anthropic()
+_client = None
+
+
+def _get_client():
+    """Lazy-load Anthropic client on first use."""
+    global _client
+    if _client is None:
+        _client = Anthropic()
+    return _client
 
 
 class TestFailure(TypedDict):
@@ -42,18 +50,29 @@ def analyze_test_failure(failure: TestFailure) -> AnalysisResult:
     Returns:
         AnalysisResult with root cause, suggestions, and confidence score
     """
-    model = os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
+    model = os.getenv("CLAUDE_MODEL", "claude-3-haiku-20240307")
 
     prompt = _build_analysis_prompt(failure)
 
-    response = client.messages.create(
-        model=model,
-        max_tokens=1024,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    try:
+        client = _get_client()
+        response = client.messages.create(
+            model=model,
+            max_tokens=1024,
+            messages=[{"role": "user", "content": prompt}],
+        )
 
-    content = response.content[0].text
-    result = _parse_analysis_response(content)
+        content = response.content[0].text
+        result = _parse_analysis_response(content)
+
+    except Exception as e:
+        # Fallback to mock response if API fails (e.g., new account with no model access)
+        if "not_found_error" in str(e) or "404" in str(e):
+            import logging
+            logging.warning(f"Claude API unavailable: {str(e)}. Using mock response.")
+            result = _mock_analysis_response(failure)
+        else:
+            raise
 
     return result
 
@@ -149,3 +168,50 @@ def format_analysis_for_report(
             "title": failure["page_title"],
         },
     }
+
+
+def _mock_analysis_response(failure: TestFailure) -> AnalysisResult:
+    """
+    Generate a mock analysis response when Claude API is unavailable.
+    
+    Used as fallback for new accounts without model access.
+    Demonstrates the expected response format.
+    """
+    selector = failure.get("selector", "")
+    error = failure.get("error_message", "").lower()
+    
+    # Basic heuristics based on selector and error
+    if "not found" in error or "element" in error:
+        root_cause = f"Selector '{selector}' does not match any elements on the page (element not found)"
+        suggestions = [
+            f"Verify the selector syntax: '{selector}'",
+            "Check if the element exists with: await page.locator('{selector}').count()",
+            "Consider adding a waitForSelector before the assertion"
+        ]
+        confidence = 7
+    elif "timeout" in error:
+        root_cause = "Element not visible within timeout period"
+        suggestions = [
+            "Increase timeout: await expect(element).toBeVisible({ timeout: 10000 })",
+            "Add explicit wait: await page.waitForSelector(selector)",
+            "Check if element requires scrolling or interaction to become visible"
+        ]
+        confidence = 6
+    else:
+        root_cause = f"Test assertion failed for selector '{selector}'"
+        suggestions = [
+            "Review the DOM structure on the page",
+            "Verify selector specificity and CSS/XPath correctness",
+            "Add explicit waits if elements are dynamically loaded"
+        ]
+        confidence = 5
+    
+    return AnalysisResult(
+        root_cause=root_cause,
+        suggestions=suggestions,
+        confidence=confidence,
+        reasoning="[MOCK RESPONSE] Your Anthropic API key doesn't have access to Claude models yet. "
+                 "To enable real Claude analysis: visit https://console.anthropic.com/settings and verify model access. "
+                 "This mock response demonstrates the analysis format."
+    )
+

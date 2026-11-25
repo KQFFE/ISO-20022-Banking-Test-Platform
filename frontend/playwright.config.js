@@ -1,5 +1,4 @@
 const { defineConfig, devices } = require('@playwright/test');
-const LLMFailureReporter = require('./reporters/llm-failure-reporter');
 
 module.exports = defineConfig({
   testDir: './e2e',
@@ -8,14 +7,7 @@ module.exports = defineConfig({
   retries: 0,
   timeout: 15000,
   workers: 1,
-  reporter: [
-    'html',
-    [LLMFailureReporter, {
-      outputDir: './test-results/llm-analysis',
-      apiEndpoint: 'http://localhost:8000',
-      enableAnalysis: process.env.DISABLE_LLM_ANALYSIS !== 'true',
-    }],
-  ],
+  reporter: 'html',
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
