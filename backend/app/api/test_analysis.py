@@ -7,7 +7,7 @@ root cause analysis and fix suggestions.
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from app.services import analyze_test_failure, format_analysis_for_report
+from services.test_analyzer import analyze_test_failure, format_analysis_for_report
 
 router = APIRouter()
 

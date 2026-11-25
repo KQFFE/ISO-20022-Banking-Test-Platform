@@ -101,8 +101,79 @@ python -m alembic upgrade head
 ### 3. Running the App
 Start the tiers in separate terminal windows from the project root:
 
-**Terminal 1 (Backend):** activate the backend venv and run `npm run backend`  
-**Terminal 2 (Frontend):** use a normal shell and run `npm run frontend`
+**Terminal 1 (Backend):** 
+```bash
+cd backend
+.\venv\Scripts\Activate.ps1  # Windows PowerShell
+# or: .\venv\Scripts\activate.bat  # Windows CMD
+# or: source venv/bin/activate  # macOS/Linux
+
+# Set Claude API key for LLM test failure analysis (optional, only if using Phase 1 features)
+$env:CLAUDE_API_KEY = "sk-ant-..."  # Windows PowerShell
+# or: export CLAUDE_API_KEY="sk-ant-..."  # macOS/Linux
+
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+**Terminal 2 (Frontend):** 
+```bash
+npm start --prefix frontend
+```
+
+> **Backend Configuration:** The backend defaults to SQLite database (`test.db`). For LLM-powered test failure analysis (Phase 1 feature), set `CLAUDE_API_KEY` environment variable before starting the server.
+
+## AI-Native Test Automation (Phase 1)
+
+This project includes **LLM-powered self-healing test automation**. When tests fail, Playwright automatically captures the failed selector and sends it to Claude API for root cause analysis and fix suggestions.
+
+### Setup Phase 1 Features
+
+1. **Add Claude API Key** to `backend/.env`:
+   ```
+   CLAUDE_API_KEY="sk-ant-your-key-here"
+   CLAUDE_MODEL="claude-3-5-sonnet-20241022"
+   ```
+
+2. **Backend automatically includes** test failure analysis endpoint:
+   - `POST /api/test/analyze-failure` — receives failure details
+   - `GET /api/test/health` — health check
+
+3. **Reporter is active by default** in `frontend/playwright.config.js`
+
+### Running POC Test
+
+```bash
+# Terminal 1: Backend (with CLAUDE_API_KEY in .env)
+cd backend
+python -m uvicorn app.main:app --reload --port 8000
+
+# Terminal 2: Frontend
+npm start --prefix frontend
+
+# Terminal 3: Run POC test
+cd frontend
+npx playwright test e2e/poc-llm-analysis.spec.js
+```
+
+**Check results:**
+```bash
+Get-Content test-results\llm-analysis\llm-analysis-report.json | ConvertFrom-Json | ConvertTo-Json
+```
+
+**Expected:** JSON report with LLM analysis including root cause, fix suggestions, and confidence score.
+
+### Disable Phase 1 (Optional)
+
+To run tests without LLM analysis:
+```bash
+$env:DISABLE_LLM_ANALYSIS = "true"
+npx playwright test
+```
+
+**Documentation:**
+- See [Roadmap.md](./Roadmap.md) for AI-Native Test Automation initiative
+- See [PHASE_1_COMPLETE.md](./PHASE_1_COMPLETE.md) for implementation details
+- See [LLM_ANALYSIS_GUIDE.md](./frontend/e2e/LLM_ANALYSIS_GUIDE.md) for troubleshooting
 
 ### GitHub Actions / CI on Commit
 Every push to `main` and every pull request triggers the workflow in `.github/workflows/ci.yml`.
