@@ -5,6 +5,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.api.auth import router as auth_router
 from app.api.transactions import router as transactions_router
 from app.api.flows import router as flows_router
+from app.api.test_analysis import router as test_analysis_router
 from app.db.session import get_db
 from app.db.models import Transaction, Flow
 from sqlalchemy.orm import Session
@@ -42,6 +43,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 app.include_router(transactions_router, prefix="/transactions", tags=["Transactions"])
 app.include_router(flows_router, prefix="/flows", tags=["Flows"])
+app.include_router(test_analysis_router, prefix="/api/test", tags=["Test Analysis"])
 
 # 4. Stats Endpoint (used by Dashboard.js)
 @app.get("/stats")
