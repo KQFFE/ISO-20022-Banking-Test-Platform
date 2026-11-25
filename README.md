@@ -2,6 +2,8 @@
 
 This application serves as a comprehensive test platform for interacting with and managing financial messages based on the ISO 20022 standard. It provides tools for viewing, validating, processing, and generating various financial message types, primarily focusing on payments and statements. The core scope includes simulating real-world financial message workflows, enabling developers and financial professionals to test integrations, validate message structures, and understand the lifecycle of ISO 20022 transactions in a controlled environment.
 
+> **🚀 AI-Native Test Automation Initiative** — See [Roadmap.md](./Roadmap.md) for planned integration of LLM-powered self-healing tests and Applitools Eyes visual regression testing.
+
 ## Project Structure
 
 The project is organized into two main components:
